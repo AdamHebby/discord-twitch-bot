@@ -1,0 +1,20 @@
+<?php
+
+namespace DiscordTwitchBot\Repository;
+
+abstract class JsonRepository implements RepositoryInterface
+{
+    protected function saveJson(string $path, array $data): void
+    {
+        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    protected function loadJson(string $path): array
+    {
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        return json_decode(file_get_contents($path), true);
+    }
+}
