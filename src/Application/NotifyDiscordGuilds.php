@@ -19,8 +19,7 @@ class NotifyDiscordGuilds
         private readonly Discord $discord,
         private readonly TwitchWrapper $twitchWrapper,
         private readonly GuildSettingsRepository $guildSettingsRepository,
-    )
-    {
+    ) {
         $this->notifiedStreamsRepository = new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db');
     }
 

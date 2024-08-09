@@ -14,8 +14,7 @@ class ListStreamers extends Command
         private readonly Logger $logger,
         private readonly Discord $discord,
         private readonly GuildSettingsRepository $guildSettingsRepository,
-    )
-    {
+    ) {
     }
 
     public function getName(): string

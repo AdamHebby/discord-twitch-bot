@@ -18,8 +18,7 @@ class RoleLimit extends Command
         private readonly TwitchWrapper $twitchApi,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
-    )
-    {
+    ) {
     }
 
     public function getName(): string
@@ -42,7 +41,10 @@ class RoleLimit extends Command
         }
 
         if ($this->checkRoleQuery->execute($message) === false) {
-            $message->reply("You don't have the role `{$currentRoleString}`! Only users with the role `{$currentRoleString}` can change the role limit.");
+            $message->reply(
+                "You don't have the role `{$currentRoleString}`! " .
+                "Only users with the role `{$currentRoleString}` can change the role limit."
+            );
             $message->react('⛔');
             return;
         }

@@ -12,8 +12,7 @@ class Help extends Command
     public function __construct(
         private readonly Logger $logger,
         private readonly Discord $discord,
-    )
-    {
+    ) {
     }
 
     public function getName(): string
@@ -28,7 +27,8 @@ class Help extends Command
         $message->reply(
             "**Commands:**\n" .
             "- `help` - Show this message.\n" .
-            "- `add <username> [custom message]` - Add a streamer to watch. Optionally set a custom message ({name} and {game} are available parameters).\n" .
+            "- `add <username> [custom message]` - Add a streamer to watch. " .
+                "Optionally set a custom message ({name} and {game} are available parameters).\n" .
             "- `remove <username>` - Remove a streamer from the watch list.\n" .
             "- `list` - List all streamers being watched.\n" .
             "- `channel <channel>` - Set the channel to post notifications in. Default is announcements.\n" .

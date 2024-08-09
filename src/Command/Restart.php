@@ -11,8 +11,7 @@ class Restart extends Command
     public function __construct(
         private readonly Logger $logger,
         private readonly Discord $discord,
-    )
-    {
+    ) {
     }
 
     public function getName(): string

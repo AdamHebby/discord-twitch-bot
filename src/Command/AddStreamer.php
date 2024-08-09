@@ -18,8 +18,7 @@ class AddStreamer extends Command
         private readonly TwitchWrapper $twitchApi,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
-    )
-    {
+    ) {
     }
 
     public function getName(): string
