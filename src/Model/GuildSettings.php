@@ -11,6 +11,7 @@ class GuildSettings
         private array $streamers = [],
         private string $prefix = self::DEFAULT_PREFIX,
         private string $channel = 'announcements',
+        private ?string $role = null,
     ) {
     }
 
@@ -64,6 +65,16 @@ class GuildSettings
         return $this->channel;
     }
 
+    public function setRole(?string $role): void
+    {
+        $this->role = $role;
+    }
+
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+
     public static function fromJsonArray(array $data): self
     {
         return new self(
@@ -71,6 +82,7 @@ class GuildSettings
             $data['streamers'] ?? [],
             $data['prefix'] ?? self::DEFAULT_PREFIX,
             $data['channel'] ?? 'announcements',
+            $data['role'] ?? null,
         );
     }
 
@@ -81,6 +93,7 @@ class GuildSettings
             'streamers' => $this->streamers,
             'prefix' => $this->prefix,
             'channel' => $this->channel,
+            'role' => $this->role,
         ];
     }
 }

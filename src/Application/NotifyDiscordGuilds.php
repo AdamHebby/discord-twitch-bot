@@ -2,18 +2,20 @@
 
 namespace DiscordTwitchBot\Application;
 
-use Discord\Builders\MessageBuilder;
 use Discord\Discord;
+use Discord\Parts\Guild\Guild;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
+use Monolog\Logger;
 
 class NotifyDiscordGuilds
 {
     private readonly NotifiedStreamsRepository $notifiedStreamsRepository;
 
     public function __construct(
+        private readonly Logger $logger,
         private readonly Discord $discord,
         private readonly TwitchWrapper $twitchWrapper,
         private readonly GuildSettingsRepository $guildSettingsRepository,
@@ -24,15 +26,18 @@ class NotifyDiscordGuilds
 
     public function execute(): void
     {
+        Benchmarker::getInstance()->start(__CLASS__);
         $guilds = $this->discord->guilds;
         $streamerCache = [];
 
         /** @var Guild $guild */
         foreach ($guilds as $guild) {
+            $this->logger->debug("Notify: Checking guild {$guild->name}");
             $guildSettings = $this->guildSettingsRepository->load($guild->id);
             $streamers = $guildSettings->getStreamers();
 
             foreach ($streamers as $streamer) {
+                $this->logger->debug("Notify: Checking streamer {$streamer}");
                 if (isset($streamerCache[$streamer])) {
                     $stream = $streamerCache[$streamer];
                 } else {
@@ -45,29 +50,33 @@ class NotifyDiscordGuilds
                 }
 
                 if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
+                    $this->logger->debug("Notify: Stream {$stream->getId()} already notified in guild {$guild->name}");
                     continue;
                 }
 
-                $customStreamerMessage = $guildSettings->getStreamerMessage($streamer);
-
-                if ($customStreamerMessage === null) {
-                    $customStreamerMessage = "Hey @everyone! {name} is now live on Twitch! " .
-                        "They're playing {game}. Go check them out!";
-                }
-
-                $customStreamerMessage = str_replace('{name}', $stream->getEscapedUsername(), $customStreamerMessage);
-                $customStreamerMessage = str_replace('{game}', $stream->getGameName(), $customStreamerMessage);
-
-                $message = MessageBuilder::new()
-                    ->setContent($customStreamerMessage)
-                    ->addEmbed(DiscordLiveEmbedQuery::generate($this->discord, $stream));
-
+                $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $stream);
                 $channel = $guildSettings->getChannel();
 
-                $guild->channels->get('name', $channel)->sendMessage($message);
+                $discordChannel = $guild->channels->get('id', $channel);
+                if ($discordChannel === null) {
+                    $discordChannel = $guild->channels->get('id', $channel);
+                } else {
+                    $guildSettings->setChannel($discordChannel->id);
+                    $this->guildSettingsRepository->save($guildSettings);
+                }
 
-                $this->notifiedStreamsRepository->add($stream->getId(), $guild->id);
+                if ($discordChannel === null) {
+                    $this->logger->error("Notify: Channel {$channel} not found in guild {$guild->name}");
+                    continue;
+                }
+
+                $discordChannel->sendMessage($message)->done(function () use ($stream, $guild) {
+                    $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
+                    $this->notifiedStreamsRepository->add($stream->getId(), $guild->id);
+                });
             }
         }
+
+        Benchmarker::getInstance()->stop(__CLASS__);
     }
 }

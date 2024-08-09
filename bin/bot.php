@@ -38,11 +38,15 @@ Benchmarker::getInstance()->start('Boot');
 
 (new Dotenv())->load(__DIR__ . '/../.env');
 
-$logger = new Logger('Logger');
-$logger->pushHandler(new StreamHandler('php://stdout', LogLevel::INFO));
+$logFilePath = '/var/log/twitch-bot.log';
+$discordLogger = new Logger('Discord');
+$discordLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::WARNING));
+
+$botLogger = new Logger('TwitchBot');
+$botLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::INFO));
 
 $discord = new Discord([
-    'logger' => $logger,
+    'logger' => $discordLogger,
     'token' => $_ENV['DISCORD_BOT_TOKEN'],
     'intents' => Intents::getDefaultIntents() | Intents::MESSAGE_CONTENT,
     'storeMessages' => false,
@@ -107,7 +111,11 @@ $discord = new Discord([
     ],
 ]);
 
-$bot = new Bot($discord, new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']), $logger);
+$bot = new Bot(
+    $discord,
+    new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']),
+    $botLogger
+);
 
 Benchmarker::getInstance()->stop('Boot');
 

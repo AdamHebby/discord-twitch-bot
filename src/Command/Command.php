@@ -6,10 +6,8 @@ use Discord\Parts\Channel\Message;
 
 abstract class Command
 {
-    public function getName(): string
-    {
-        return static::class;
-    }
+    abstract public function getName(): string;
+    // abstract public function getDescription(): string;
 
     abstract public function execute(Message $message): void;
 
