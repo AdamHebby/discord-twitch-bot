@@ -69,10 +69,12 @@ class NotifyDiscordGuilds
                     continue;
                 }
 
-                $discordChannel->sendMessage($message)->done(function () use ($stream, $guild) {
-                    $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
-                    $this->notifiedStreamsRepository->add($stream->getId(), $guild->id);
-                });
+                $discordChannel->sendMessage($message->message, false, $message->embed)->done(
+                    function () use ($stream, $guild) {
+                        $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
+                        $this->notifiedStreamsRepository->add($stream->getId(), $guild->id);
+                    }
+                );
             }
         }
 

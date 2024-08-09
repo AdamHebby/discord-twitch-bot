@@ -2,12 +2,10 @@
 
 namespace DiscordTwitchBot\Application\Query;
 
-use Discord\Builders\Components\ActionRow;
-use Discord\Builders\Components\Button;
-use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use DiscordTwitchBot\Application\Benchmarker;
+use DiscordTwitchBot\Application\EmbeddedMessage;
 use DiscordTwitchBot\Model\GuildSettings;
 use DiscordTwitchBot\Model\Stream;
 
@@ -17,7 +15,7 @@ class DiscordLiveEmbedQuery
         GuildSettings $guildSettings,
         Discord $discord,
         Stream $stream
-    ): MessageBuilder {
+    ): EmbeddedMessage {
         Benchmarker::getInstance()->start(__CLASS__);
 
         $streamUrl   = "https://www.twitch.tv/{$stream->getUserLogin()}?referrer=discord";
@@ -58,12 +56,8 @@ class DiscordLiveEmbedQuery
         $customStreamerMessage = str_replace('{name}', $stream->getEscapedUsername(), $customStreamerMessage);
         $customStreamerMessage = str_replace('{game}', $stream->getGameName(), $customStreamerMessage);
 
-        $builder = new MessageBuilder();
-        $builder->setContent($customStreamerMessage);
-        $builder->addEmbed($embed);
-
         Benchmarker::getInstance()->stop(__CLASS__);
 
-        return $builder;
+        return new EmbeddedMessage($customStreamerMessage, $embed);
     }
 }

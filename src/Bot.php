@@ -108,7 +108,7 @@ class Bot
             $this->guildSettingsRepository
         );
 
-        $this->discord->getLoop()->addPeriodicTimer(15, function () use ($notify) {
+        $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {
             try {
                 $notify->execute();
             } catch (\Throwable $th) {
