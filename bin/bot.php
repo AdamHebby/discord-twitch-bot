@@ -3,6 +3,7 @@
 use Discord\Discord;
 use Discord\WebSockets\Event;
 use Discord\WebSockets\Intents;
+use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Bot;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use Monolog\Handler\StreamHandler;
@@ -32,6 +33,8 @@ if (!file_exists(__DIR__ . '/../data')) {
 }
 
 require_once __DIR__ . '/../vendor/autoload.php';
+
+Benchmarker::getInstance()->start('Boot');
 
 (new Dotenv())->load(__DIR__ . '/../.env');
 
@@ -105,4 +108,7 @@ $discord = new Discord([
 ]);
 
 $bot = new Bot($discord, new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']), $logger);
+
+Benchmarker::getInstance()->stop('Boot');
+
 $bot->run();
