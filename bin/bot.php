@@ -9,7 +9,6 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LogLevel;
 use Symfony\Component\Dotenv\Dotenv;
-use TwitchApi\TwitchApi;
 
 if (file_exists(__DIR__ . '/../lock') && filemtime(__DIR__ . '/../lock') > time() - 55) {
     echo "Bot is already running", PHP_EOL;
@@ -34,14 +33,14 @@ if (!file_exists(__DIR__ . '/../data')) {
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$dotEnv = (new Dotenv())->load(__DIR__ . '/../.env');
+(new Dotenv())->load(__DIR__ . '/../.env');
 
 $logger = new Logger('Logger');
-$logger->pushHandler(new StreamHandler('php://stdout'), LogLevel::WARNING);
+$logger->pushHandler(new StreamHandler('php://stdout', LogLevel::INFO));
 
 $discord = new Discord([
     'logger' => $logger,
-    'token' => getenv('DISCORD_BOT_TOKEN'),
+    'token' => $_ENV['DISCORD_BOT_TOKEN'],
     'intents' => Intents::getDefaultIntents() | Intents::MESSAGE_CONTENT,
     'storeMessages' => false,
     'disabledEvents' => [
@@ -78,12 +77,12 @@ $discord = new Discord([
         Event::MESSAGE_REACTION_REMOVE,
         Event::MESSAGE_REACTION_REMOVE_ALL,
         Event::MESSAGE_REACTION_REMOVE_EMOJI,
-        Event::GUILD_MEMBER_ADD,
-        Event::GUILD_MEMBER_REMOVE,
-        Event::GUILD_MEMBER_UPDATE,
-        Event::GUILD_ROLE_CREATE,
-        Event::GUILD_ROLE_DELETE,
-        Event::GUILD_ROLE_UPDATE,
+        // Event::GUILD_MEMBER_ADD,
+        // Event::GUILD_MEMBER_REMOVE,
+        // Event::GUILD_MEMBER_UPDATE,
+        // Event::GUILD_ROLE_CREATE,
+        // Event::GUILD_ROLE_DELETE,
+        // Event::GUILD_ROLE_UPDATE,
         Event::GUILD_SCHEDULED_EVENT_CREATE,
         Event::GUILD_SCHEDULED_EVENT_UPDATE,
         Event::GUILD_SCHEDULED_EVENT_DELETE,
@@ -105,5 +104,5 @@ $discord = new Discord([
     ],
 ]);
 
-$bot = new Bot($discord, new TwitchWrapper(getenv('TWITCH_CLIENT_ID'), getenv('TWITCH_CLIENT_SECRET')), $logger);
+$bot = new Bot($discord, new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']), $logger);
 $bot->run();
