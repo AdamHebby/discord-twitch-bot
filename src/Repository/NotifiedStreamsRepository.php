@@ -4,9 +4,9 @@ namespace DiscordTwitchBot\Repository;
 
 class NotifiedStreamsRepository extends SqlLiteDatabaseRepository
 {
-    public function __construct()
+    public function __construct(string $path)
     {
-        parent::__construct(__DIR__ . '/../../data/notified_streams.db');
+        parent::__construct($path);
 
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS notified_streams (
             stream_id TEXT,
