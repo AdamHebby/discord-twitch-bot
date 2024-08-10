@@ -7,6 +7,10 @@ use DateTimeZone;
 
 class Stream
 {
+    /**
+     * @param array<string> $tags
+     * @param array<int> $tagIds
+     */
     public function __construct(
         private readonly string $id,
         private readonly string $userId,
@@ -76,6 +80,9 @@ class Stream
         return $this->title;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getTags(): array
     {
         return $this->tags;
@@ -101,6 +108,9 @@ class Stream
         return str_replace(['{width}', '{height}'], [$width, $height], $this->thumbnailUrl);
     }
 
+    /**
+     * @return array<int>
+     */
     public function getTagIds(): array
     {
         return $this->tagIds;
@@ -111,6 +121,9 @@ class Stream
         return $this->isMature;
     }
 
+    /**
+     * @param array<mixed> $data
+     */
     public static function fromJsonArray(array $data): self
     {
         $utc = new DateTimeZone("UTC");

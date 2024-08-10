@@ -8,19 +8,17 @@ use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class NotifyDiscordGuilds
 {
-    private readonly NotifiedStreamsRepository $notifiedStreamsRepository;
-
     public function __construct(
-        private readonly Logger $logger,
+        private readonly LoggerInterface $logger,
         private readonly Discord $discord,
         private readonly TwitchWrapper $twitchWrapper,
         private readonly GuildSettingsRepository $guildSettingsRepository,
+        private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
     ) {
-        $this->notifiedStreamsRepository = new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db');
     }
 
     public function execute(): void

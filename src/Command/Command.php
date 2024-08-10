@@ -11,6 +11,9 @@ abstract class Command
 
     abstract public function execute(Message $message): void;
 
+    /**
+     * @return string[]
+     */
     public static function getArgs(Message $message): array
     {
         $args = explode(' ', $message->content);

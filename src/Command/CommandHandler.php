@@ -14,6 +14,9 @@ class CommandHandler
         $this->commands[] = $command;
     }
 
+    /**
+     * @param Command[] $commands
+     */
     public function addCommands(array $commands): void
     {
         foreach ($commands as $command) {
@@ -21,6 +24,9 @@ class CommandHandler
         }
     }
 
+    /**
+     * @return Command[]
+     */
     public function getCommands(): array
     {
         return $this->commands;

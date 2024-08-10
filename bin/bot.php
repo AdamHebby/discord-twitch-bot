@@ -6,6 +6,8 @@ use Discord\WebSockets\Intents;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Bot;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
+use DiscordTwitchBot\Repository\GuildSettingsRepository;
+use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LogLevel;
@@ -114,7 +116,9 @@ $discord = new Discord([
 $bot = new Bot(
     $discord,
     new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']),
-    $botLogger
+    $botLogger,
+    new GuildSettingsRepository(__DIR__ . '/../data/'),
+    new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db'),
 );
 
 Benchmarker::getInstance()->stop('Boot');

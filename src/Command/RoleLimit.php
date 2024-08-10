@@ -8,14 +8,12 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\CheckRoleQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class RoleLimit extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
-        private readonly TwitchWrapper $twitchApi,
+        private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
     ) {
@@ -49,7 +47,7 @@ class RoleLimit extends Command
             return;
         }
 
-        $newRole       = $args[0] ?? 'none';
+        $newRole       = !empty($args[0]) ? $args[0] : 'none';
         $newRoleValue  = $newRole === 'none' ? null : $newRole;
 
         if ($currentRole === $newRoleValue) {
@@ -66,6 +64,16 @@ class RoleLimit extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $message->reply("Role limit set to `{$newRole}`!");
+
+        $this->logger->info(sprintf(
+            'Role limit changed from "%s" to "%s" in guild "%s" (%s) by user "%s" (%s)',
+            $currentRoleString,
+            $newRole,
+            $message->channel->guild->name,
+            $message->channel->guild->id,
+            $message->author->username,
+            $message->author->id
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }

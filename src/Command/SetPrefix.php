@@ -2,20 +2,16 @@
 
 namespace DiscordTwitchBot\Command;
 
-use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\CheckRoleQuery;
-use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class SetPrefix extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
-        private readonly TwitchWrapper $twitchApi,
+        private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
     ) {
@@ -50,6 +46,15 @@ class SetPrefix extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $message->reply("Prefix set to: `$prefix`");
+
+        $this->logger->info(sprintf(
+            'Set prefix to %s in guild "%s" (%s) by user %s (%s)',
+            $prefix,
+            $message->channel->guild->name,
+            $message->channel->guild->id,
+            $message->author->username,
+            $message->author->id
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }

@@ -18,63 +18,54 @@ use DiscordTwitchBot\Command\RoleLimit;
 use DiscordTwitchBot\Command\SetChannel;
 use DiscordTwitchBot\Command\SetPrefix;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
+use Psr\Log\LoggerInterface;
 
 class Bot
 {
-    private GuildSettingsRepository $guildSettingsRepository;
     private CommandHandler $commandHandler;
     private CheckRoleQuery $checkRoleQuery;
 
     public function __construct(
         private readonly Discord $discord,
         private readonly TwitchWrapper $twitchWrapper,
-        private readonly Logger $logger,
+        private readonly LoggerInterface $logger,
+        private readonly GuildSettingsRepository $guildSettingsRepository,
+        private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
     ) {
-        $this->guildSettingsRepository = new GuildSettingsRepository(__DIR__ . '/../data/');
         $this->checkRoleQuery = new CheckRoleQuery($this->guildSettingsRepository);
         $this->commandHandler = new CommandHandler();
 
         $this->commandHandler->addCommands([
             new Restart($this->logger, $this->discord),
-            new Help($this->logger, $this->discord),
+            new Help($this->logger),
             new AddStreamer(
                 $this->logger,
-                $this->discord,
                 $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
             ),
             new RemoveStreamer(
                 $this->logger,
-                $this->discord,
-                $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
             ),
             new SetPrefix(
                 $this->logger,
-                $this->discord,
-                $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
             ),
             new SetChannel(
                 $this->logger,
-                $this->discord,
-                $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
             ),
             new ListStreamers(
                 $this->logger,
-                $this->discord,
                 $this->guildSettingsRepository
             ),
             new RoleLimit(
                 $this->logger,
-                $this->discord,
-                $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
             ),
@@ -91,7 +82,10 @@ class Bot
             try {
                 $guild = $message->channel->guild_id;
                 $guildSettings = $this->guildSettingsRepository->load($guild);
-                $command = $this->commandHandler->parseCommand($guildSettings->getPrefix(), $message->content);
+                $command = $this->commandHandler->parseCommand(
+                    $guildSettings->getPrefix(),
+                    $message->content
+                );
 
                 if ($command !== null) {
                     $command->execute($message);
@@ -105,7 +99,8 @@ class Bot
             $this->logger,
             $this->discord,
             $this->twitchWrapper,
-            $this->guildSettingsRepository
+            $this->guildSettingsRepository,
+            $this->notifiedStreamsRepository
         );
 
         $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {

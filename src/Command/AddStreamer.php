@@ -8,13 +8,12 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\CheckRoleQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class AddStreamer extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
+        private readonly LoggerInterface $logger,
         private readonly TwitchWrapper $twitchApi,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
@@ -56,6 +55,16 @@ class AddStreamer extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $message->reply("{$streamer} is now being watched!");
+
+        $this->logger->info(sprintf(
+            'Added streamer %s to guild "%s" (%s) by user %s (%s) with custom message "%s"',
+            $streamer,
+            $message->channel->guild->name,
+            $message->channel->guild->id,
+            $message->author->username,
+            $message->author->id,
+            $customMessage
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }

@@ -6,6 +6,9 @@ class GuildSettings
 {
     public const DEFAULT_PREFIX = '!sb';
 
+    /**
+     * @param array<string,string|null> $streamers
+     */
     public function __construct(
         private string $guildId,
         private array $streamers = [],
@@ -20,6 +23,9 @@ class GuildSettings
         return $this->guildId;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getStreamers(): array
     {
         return array_keys($this->streamers);
@@ -75,6 +81,9 @@ class GuildSettings
         return $this->role;
     }
 
+    /**
+     * @param array<string,mixed> $data
+     */
     public static function fromJsonArray(array $data): self
     {
         return new self(
@@ -86,6 +95,9 @@ class GuildSettings
         );
     }
 
+    /**
+     * @return array<string,mixed>
+     */
     public function toJsonArray(): array
     {
         return [

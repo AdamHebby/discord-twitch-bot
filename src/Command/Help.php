@@ -5,13 +5,12 @@ namespace DiscordTwitchBot\Command;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use DiscordTwitchBot\Application\Benchmarker;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class Help extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -39,6 +38,14 @@ class Help extends Command
             "- `!sb add j0hnn0o OI OI, come watch me! I'm playing {game}`\n" .
             "- `!sb channel announcements`\n"
         );
+
+        $this->logger->info(sprintf(
+            'Help message shown to user %s (%s) in guild "%s" (%s)',
+            $message->author->username,
+            $message->author->id,
+            $message->channel->guild->name,
+            $message->channel->guild->id
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }

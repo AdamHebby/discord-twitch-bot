@@ -10,24 +10,14 @@ use TwitchApi\TwitchApi;
 class TwitchWrapper
 {
     private TwitchApi $twitchApi;
-    private self $instance;
     private ?string $bearerToken = null;
 
     public function __construct(
         private string $clientId,
         private string $clientSecret,
     ) {
-        $helixGuzzleClient = new HelixGuzzleClient($clientId);
-        $this->twitchApi = new TwitchApi($helixGuzzleClient, $clientId, $clientSecret);
-    }
-
-    public function getInstance(): self
-    {
-        if ($this->instance === null) {
-            $this->instance = new self($this->clientId, $this->clientSecret);
-        }
-
-        return $this->instance;
+        $helixGuzzleClient = new HelixGuzzleClient($this->clientId);
+        $this->twitchApi   = new TwitchApi($helixGuzzleClient, $this->clientId, $this->clientSecret);
     }
 
     public function checkStreamerExists(string $streamer): bool
@@ -79,7 +69,7 @@ class TwitchWrapper
 
         $oauth = $this->twitchApi->getOauthApi();
 
-        $token = $oauth->getAppAccessToken($twitch_scopes ?? '');
+        $token = $oauth->getAppAccessToken();
         $data = json_decode($token->getBody()->getContents());
 
         // Your bearer token

@@ -10,5 +10,8 @@
         "psr-4": {
             "DiscordTwitchBot\\": "src/"
         }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.11"
     }
 }

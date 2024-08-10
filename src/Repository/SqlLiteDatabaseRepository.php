@@ -2,14 +2,14 @@
 
 namespace DiscordTwitchBot\Repository;
 
-abstract class SqlLiteDatabaseRepository
+abstract class SqlLiteDatabaseRepository implements RepositoryInterface
 {
     protected \PDO $pdo;
 
     public function __construct(
-        private string $path
+        private readonly string $path
     ) {
-        $this->pdo = new \PDO("sqlite:{$path}");
+        $this->pdo = new \PDO("sqlite:{$this->path}");
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     }
 }

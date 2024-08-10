@@ -8,14 +8,12 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\CheckRoleQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class RemoveStreamer extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
-        private readonly TwitchWrapper $twitchApi,
+        private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
     ) {
@@ -49,6 +47,15 @@ class RemoveStreamer extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $message->reply("{$streamer} is no longer being watched!");
+
+        $this->logger->info(sprintf(
+            'Removed streamer %s from guild "%s" (%s) by user "%s" (%s)',
+            $streamer,
+            $message->channel->guild->name,
+            $message->channel->guild->id,
+            $message->author->username,
+            $message->author->id
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }

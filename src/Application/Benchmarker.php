@@ -5,7 +5,11 @@ namespace DiscordTwitchBot\Application;
 class Benchmarker
 {
     private static self $instance;
+
+    /** @var array<string,float> */
     private array $active = [];
+
+    /** @var array<string,array<float>> */
     private array $timings = [];
 
     public const KEEP_MAX = 500;
@@ -52,18 +56,24 @@ class Benchmarker
         return array_sum($this->timings[$key]) / count($this->timings[$key]);
     }
 
+    /**
+     * @return array<string,float>
+     */
     public function avgAll(): array
     {
         $averages = [];
 
         foreach ($this->timings as $key => $timings) {
             $suffix = '_AO_' . count($timings);
-            $averages[$key . $suffix] = sprintf('%.3f', array_sum($timings) / count($timings));
+            $averages[$key . $suffix] = (float) sprintf('%.3f', array_sum($timings) / count($timings));
         }
 
         return $averages;
     }
 
+    /**
+     * @return array<string, array<string|int, float>>
+     */
     public function getTimings(): array
     {
         return $this->timings;

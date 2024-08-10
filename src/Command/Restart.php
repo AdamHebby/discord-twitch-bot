@@ -4,12 +4,12 @@ namespace DiscordTwitchBot\Command;
 
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class Restart extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
+        private readonly LoggerInterface $logger,
         private readonly Discord $discord,
     ) {
     }
@@ -21,11 +21,17 @@ class Restart extends Command
 
     public function execute(Message $message): void
     {
+        $this->logger->warning(sprintf(
+            'User %s (%s) attempted to restart the bot',
+            $message->author->username,
+            $message->author->id
+        ));
+
         if ($message->member->user->id !== '399256730749370369') {
             return;
         }
 
-        echo 'Admin requested a restart!' . PHP_EOL;
+        $this->logger->warning('Restarting bot...');
 
         $message->react('✅')->done(function (Message $message) {
             $this->discord->close();

@@ -6,13 +6,12 @@ use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class ListStreamers extends Command
 {
     public function __construct(
-        private readonly Logger $logger,
-        private readonly Discord $discord,
+        private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
     ) {
     }
@@ -34,6 +33,14 @@ class ListStreamers extends Command
         }
 
         $message->reply('Streamers being watched: ' . implode(', ', $streamers));
+
+        $this->logger->info(sprintf(
+            'Streamers List shown to user %s (%s) in guild "%s" (%s)',
+            $message->author->username,
+            $message->author->id,
+            $message->channel->guild->name,
+            $message->channel->guild->id
+        ));
 
         Benchmarker::getInstance()->stop(__CLASS__);
     }
