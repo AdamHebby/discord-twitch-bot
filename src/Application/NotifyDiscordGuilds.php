@@ -8,6 +8,7 @@ use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
+use DiscordTwitchBot\Model\Stream;
 use Psr\Log\LoggerInterface;
 
 class NotifyDiscordGuilds
@@ -25,6 +26,8 @@ class NotifyDiscordGuilds
     {
         Benchmarker::getInstance()->start(__CLASS__);
         $guilds = $this->discord->guilds;
+
+        /** @var array<string, Stream> */
         $streamerCache = [];
 
         /** @var Guild $guild */
@@ -47,7 +50,16 @@ class NotifyDiscordGuilds
                 }
 
                 if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
-                    $this->logger->debug("Notify: Stream {$stream->getId()} already notified in guild {$guild->name}");
+                    $this->logger->debug(
+                        "Notify: Stream {$stream->getId()} already notified in guild {$guild->name}. Skipping."
+                    );
+                    continue;
+                }
+
+                if ($this->notifiedStreamsRepository->isNotifiedRestartedStream($stream->getUserLogin(), $guild->id)) {
+                    $this->logger->debug(
+                        "Notify: Stream {$stream->getId()} restarted in guild {$guild->name}. Skipping."
+                    );
                     continue;
                 }
 
@@ -70,7 +82,7 @@ class NotifyDiscordGuilds
                 $discordChannel->sendMessage($message->message, false, $message->embed)->done(
                     function () use ($stream, $guild) {
                         $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
-                        $this->notifiedStreamsRepository->add($stream->getId(), $guild->id);
+                        $this->notifiedStreamsRepository->add($stream->getUserLogin(), $stream->getId(), $guild->id);
                     }
                 );
             }

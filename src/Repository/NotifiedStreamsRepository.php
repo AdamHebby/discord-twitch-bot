@@ -11,19 +11,22 @@ class NotifiedStreamsRepository extends SqlLiteDatabaseRepository
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS notified_streams (
             stream_id TEXT,
             guild_id TEXT,
+            streamer_name TEXT,
             notified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (stream_id, guild_id)
         )');
     }
 
-    public function add(string $streamId, string $guildId): void
+    public function add(string $streamerName, string $streamId, string $guildId): void
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO notified_streams (stream_id, guild_id)  VALUES (:stream_id, :guild_id)'
+            'INSERT INTO notified_streams (stream_id, guild_id, streamer_name) ' .
+            'VALUES (:stream_id, :guild_id, :streamer_name)'
         );
         $stmt->execute([
             'stream_id' => $streamId,
             'guild_id'  => $guildId,
+            'streamer_name' => $streamerName,
         ]);
     }
 
@@ -48,6 +51,21 @@ class NotifiedStreamsRepository extends SqlLiteDatabaseRepository
         $stmt->execute([
             'stream_id' => $streamId,
             'guild_id'  => $guildId,
+        ]);
+
+        return $stmt->fetchColumn() > 0;
+    }
+
+    public function isNotifiedRestartedStream(string $streamerName, string $guildId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM notified_streams WHERE ' .
+            'streamer_name = :streamer_name AND guild_id = :guild_id AND notified_at >= datetime("now", "-20 minutes")'
+        );
+
+        $stmt->execute([
+            'streamer_name' => $streamerName,
+            'guild_id'      => $guildId,
         ]);
 
         return $stmt->fetchColumn() > 0;
