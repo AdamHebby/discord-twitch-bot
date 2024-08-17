@@ -2,6 +2,8 @@
 
 namespace DiscordTwitchBot\Command;
 
+use Discord\Parts\Interactions\Interaction;
+
 class CommandHandler
 {
     /**
@@ -11,7 +13,7 @@ class CommandHandler
 
     public function addCommand(Command $command): void
     {
-        $this->commands[] = $command;
+        $this->commands[$command->getName()] = $command;
     }
 
     /**
@@ -34,27 +36,18 @@ class CommandHandler
 
     public function getCommand(string $commandName): ?Command
     {
-        foreach ($this->commands as $command) {
-            if ($command->getName() === $commandName) {
-                return $command;
-            }
-        }
-
-        return null;
+        return $this->commands[$commandName] ?? null;
     }
 
-    public function parseCommand(string $prefix, string $message): ?Command
+    public function handle(Interaction $interaction): void
     {
-        if (strpos(trim($message), trim($prefix)) !== 0) {
-            return null;
+        $name = $interaction->data->name;
+        $command = $this->getCommand($name);
+
+        if ($command === null) {
+            return;
         }
 
-        $parts = explode(' ', trim($message));
-
-        if (count($parts) < 2) {
-            return null;
-        }
-
-        return $this->getCommand($parts[1]);
+        $command->execute($interaction);
     }
 }

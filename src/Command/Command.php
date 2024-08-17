@@ -2,26 +2,41 @@
 
 namespace DiscordTwitchBot\Command;
 
-use Discord\Parts\Channel\Message;
+use Discord\Builders\CommandBuilder;
+use Discord\Builders\MessageBuilder;
+use Discord\Discord;
+use Discord\Parts\Interactions\Interaction;
 
 abstract class Command
 {
     abstract public function getName(): string;
-    // abstract public function getDescription(): string;
 
-    abstract public function execute(Message $message): void;
+    abstract public function getDescription(): string;
+
+    abstract public function execute(Interaction $message): void;
 
     /**
-     * @return string[]
+     * @return CommandOption[]
      */
-    public static function getArgs(Message $message): array
-    {
-        $args = explode(' ', $message->content);
-        $args = array_map('trim', $args);
-        $args = array_filter($args);
-        $args = array_slice($args, 2);
-        $args = array_values($args);
+    abstract public function getOptions(): array;
 
-        return $args;
+    public function getCommand(Discord $discord): CommandBuilder
+    {
+        $command = CommandBuilder::new()
+            ->setName($this->getName())
+            ->setDescription($this->getDescription());
+
+        foreach ($this->getOptions() as $option) {
+            $command->addOption($option->toOption($discord));
+        }
+
+        return $command;
+    }
+
+    public function interactionReply(Interaction $interaction, string $message): void
+    {
+        $interaction->respondWithMessage(
+            MessageBuilder::new()->setContent($message)
+        );
     }
 }

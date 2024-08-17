@@ -2,8 +2,7 @@
 
 namespace DiscordTwitchBot\Command;
 
-use Discord\Discord;
-use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use Psr\Log\LoggerInterface;
 
@@ -11,6 +10,7 @@ class Help extends Command
 {
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly CommandHandler $commandHandler,
     ) {
     }
 
@@ -19,32 +19,47 @@ class Help extends Command
         return 'help';
     }
 
-    public function execute(Message $message): void
+    public function getDescription(): string
+    {
+        return 'Show this message.';
+    }
+
+    public function getOptions(): array
+    {
+        return [];
+    }
+
+    public function execute(Interaction $interaction): void
     {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        $message->reply(
-            "**Commands:**\n" .
-            "- `help` - Show this message.\n" .
-            "- `add <username> [custom message]` - Add a streamer to watch. " .
-                "Optionally set a custom message ({name} and {game} are available parameters).\n" .
-            "- `remove <username>` - Remove a streamer from the watch list.\n" .
-            "- `list` - List all streamers being watched.\n" .
-            "- `channel <channel>` - Set the channel to post notifications in. Default is announcements.\n" .
-            "- `role <role>` - Set the role required to use bot commands. Default is `none`.\n" .
-            "- `prefix <prefix>` - Set the bot prefix. Default is `!sb`.\n" .
-            "\n" .
-            "**Example:**\n" .
-            "- `!sb add j0hnn0o OI OI, come watch me! I'm playing {game}`\n" .
-            "- `!sb channel announcements`\n"
-        );
+        $commands = $this->commandHandler->getCommands();
+        $msg = "**Commands:**\n";
+
+        foreach ($commands as $command) {
+            $args = '';
+
+            foreach ($command->getOptions() as $argument) {
+                $name = str_replace('_', ' ', $argument->getName());
+
+                if ($argument->isRequired()) {
+                    $args .= " <{$name}>";
+                } else {
+                    $args .= " [{$name}]";
+                }
+            }
+
+            $msg .= "- `{$command->getName()}{$args}` - {$command->getDescription()}\n";
+        }
+
+        $this->interactionReply($interaction, $msg);
 
         $this->logger->info(sprintf(
             'Help message shown to user %s (%s) in guild "%s" (%s)',
-            $message->author->username,
-            $message->author->id,
-            $message->channel->guild->name,
-            $message->channel->guild->id
+            $interaction->member->username,
+            $interaction->member->id,
+            $interaction->channel->guild->name,
+            $interaction->channel->guild->id
         ));
 
         Benchmarker::getInstance()->stop(__CLASS__);

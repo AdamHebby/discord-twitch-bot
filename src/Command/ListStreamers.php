@@ -2,8 +2,7 @@
 
 namespace DiscordTwitchBot\Command;
 
-use Discord\Discord;
-use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
@@ -21,25 +20,35 @@ class ListStreamers extends Command
         return 'list';
     }
 
-    public function execute(Message $message): void
+    public function getDescription(): string
+    {
+        return 'List all streamers being watched.';
+    }
+
+    public function getOptions(): array
+    {
+        return [];
+    }
+
+    public function execute(Interaction $interaction): void
     {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        $streamers = $this->guildSettingsRepository->load($message->channel->guild_id)->getStreamers();
+        $streamers = $this->guildSettingsRepository->load($interaction->channel->guild_id)->getStreamers();
 
         if (empty($streamers)) {
-            $message->reply('No streamers are being watched!');
+            $this->interactionReply($interaction, 'No streamers are being watched!');
             return;
         }
 
-        $message->reply('Streamers being watched: ' . implode(', ', $streamers));
+        $this->interactionReply($interaction, 'Streamers being watched: ' . implode(', ', $streamers));
 
         $this->logger->info(sprintf(
             'Streamers List shown to user %s (%s) in guild "%s" (%s)',
-            $message->author->username,
-            $message->author->id,
-            $message->channel->guild->name,
-            $message->channel->guild->id
+            $interaction->member->username,
+            $interaction->member->id,
+            $interaction->channel->guild->name,
+            $interaction->channel->guild->id
         ));
 
         Benchmarker::getInstance()->stop(__CLASS__);

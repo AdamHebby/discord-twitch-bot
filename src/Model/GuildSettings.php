@@ -4,17 +4,13 @@ namespace DiscordTwitchBot\Model;
 
 class GuildSettings
 {
-    public const DEFAULT_PREFIX = '!sb';
-
     /**
      * @param array<string,string|null> $streamers
      */
     public function __construct(
         private string $guildId,
         private array $streamers = [],
-        private string $prefix = self::DEFAULT_PREFIX,
-        private string $channel = 'announcements',
-        private ?string $role = null,
+        private array $channels = [],
     ) {
     }
 
@@ -36,14 +32,20 @@ class GuildSettings
         return $this->streamers[$streamer] ?? null;
     }
 
-    public function addStreamer(string $streamer, ?string $message = null): void
+    public function addStreamer(string $streamer, ?string $message, string $channel): void
     {
         $this->streamers[$streamer] = $message;
+        $this->channels[$streamer] = $channel;
+    }
+
+    public function getStreamerChannel(string $streamer): ?string
+    {
+        return $this->channels[$streamer] ?? null;
     }
 
     public function hasStreamer(string $streamer): bool
     {
-        return isset($this->streamers[$streamer]);
+        return array_key_exists($streamer, $this->streamers);
     }
 
     public function removeStreamer(string $streamer): void
@@ -51,34 +53,9 @@ class GuildSettings
         unset($this->streamers[$streamer]);
     }
 
-    public function getPrefix(): string
+    public function getChannels(): array
     {
-        return $this->prefix;
-    }
-
-    public function setPrefix(string $prefix): void
-    {
-        $this->prefix = $prefix;
-    }
-
-    public function setChannel(string $channel): void
-    {
-        $this->channel = $channel;
-    }
-
-    public function getChannel(): string
-    {
-        return $this->channel;
-    }
-
-    public function setRole(?string $role): void
-    {
-        $this->role = $role;
-    }
-
-    public function getRole(): ?string
-    {
-        return $this->role;
+        return $this->channels;
     }
 
     /**
@@ -89,9 +66,7 @@ class GuildSettings
         return new self(
             $data['guildId'],
             $data['streamers'] ?? [],
-            $data['prefix'] ?? self::DEFAULT_PREFIX,
-            $data['channel'] ?? 'announcements',
-            $data['role'] ?? null,
+            $data['channels'] ?? [],
         );
     }
 
@@ -103,9 +78,7 @@ class GuildSettings
         return [
             'guildId' => $this->guildId,
             'streamers' => $this->streamers,
-            'prefix' => $this->prefix,
-            'channel' => $this->channel,
-            'role' => $this->role,
+            'channels' => $this->channels,
         ];
     }
 }

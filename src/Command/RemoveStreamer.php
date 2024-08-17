@@ -2,11 +2,9 @@
 
 namespace DiscordTwitchBot\Command;
 
-use Discord\Discord;
-use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Command\Option;
+use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
-use DiscordTwitchBot\Application\Query\CheckRoleQuery;
-use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
 
@@ -15,7 +13,6 @@ class RemoveStreamer extends Command
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
-        private readonly CheckRoleQuery $checkRoleQuery,
     ) {
     }
 
@@ -24,37 +21,47 @@ class RemoveStreamer extends Command
         return 'remove';
     }
 
-    public function execute(Message $message): void
+    public function getDescription(): string
+    {
+        return 'Remove a streamer from being watched.';
+    }
+
+    public function getOptions(): array
+    {
+        return [
+            new CommandOption([
+                'name'        => 'streamer',
+                'description' => 'The Twitch streamer to stop watching.',
+                'type'        => Option::STRING,
+                'required'    => true,
+            ]),
+        ];
+    }
+
+    public function execute(Interaction $interaction): void
     {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        if (!$this->checkRoleQuery->execute($message)) {
-            $message->reply("You don't have the correct role to use this command!");
-            $message->react('⛔');
-            return;
-        }
-
-        $args          = self::getArgs($message);
-        $streamer      = $args[0];
-        $guildSettings = $this->guildSettingsRepository->load($message->channel->guild_id);
+        $streamer = $interaction->data['options']['streamer']->value;
+        $guildSettings = $this->guildSettingsRepository->load($interaction->channel->guild_id);
 
         if ($guildSettings->hasStreamer($streamer)) {
-            $message->reply("{$streamer} is not being watched!");
+            $this->interactionReply($interaction, "{$streamer} is not being watched!");
             return;
         }
 
         $guildSettings->removeStreamer($streamer);
         $this->guildSettingsRepository->save($guildSettings);
 
-        $message->reply("{$streamer} is no longer being watched!");
+        $this->interactionReply($interaction, "{$streamer} is no longer being watched!");
 
         $this->logger->info(sprintf(
             'Removed streamer %s from guild "%s" (%s) by user "%s" (%s)',
             $streamer,
-            $message->channel->guild->name,
-            $message->channel->guild->id,
-            $message->author->username,
-            $message->author->id
+            $interaction->channel->guild->name,
+            $interaction->channel->guild->id,
+            $interaction->member->username,
+            $interaction->member->id
         ));
 
         Benchmarker::getInstance()->stop(__CLASS__);

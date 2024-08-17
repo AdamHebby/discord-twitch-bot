@@ -51,7 +51,16 @@ class StreamerRepository extends SqlLiteDatabaseRepository
                 :offline_image_url,
                 :view_count,
                 :created_at
-            );
+            ) ON CONFLICT(`login`) DO UPDATE SET
+                `id` = :id,
+                `display_name` = :display_name,
+                `type` = :type,
+                `broadcaster_type` = :broadcaster_type,
+                `description` = :description,
+                `profile_image_url` = :profile_image_url,
+                `offline_image_url` = :offline_image_url,
+                `view_count` = :view_count,
+                `created_at` = :created_at
         SQL);
 
         $stmt->execute($streamer->toArray());

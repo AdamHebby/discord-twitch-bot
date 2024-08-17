@@ -3,20 +3,16 @@
 namespace DiscordTwitchBot;
 
 use Discord\Discord;
-use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
+use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\NotifyDiscordGuilds;
-use DiscordTwitchBot\Application\Query\CheckRoleQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Command\AddStreamer;
 use DiscordTwitchBot\Command\CommandHandler;
 use DiscordTwitchBot\Command\Help;
 use DiscordTwitchBot\Command\ListStreamers;
 use DiscordTwitchBot\Command\RemoveStreamer;
-use DiscordTwitchBot\Command\Restart;
-use DiscordTwitchBot\Command\RoleLimit;
-use DiscordTwitchBot\Command\SetChannel;
-use DiscordTwitchBot\Command\SetPrefix;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
@@ -25,7 +21,6 @@ use Psr\Log\LoggerInterface;
 class Bot
 {
     private CommandHandler $commandHandler;
-    private CheckRoleQuery $checkRoleQuery;
 
     public function __construct(
         private readonly Discord $discord,
@@ -35,67 +30,43 @@ class Bot
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
         private readonly StreamerRepository $streamerRepository,
     ) {
-        $this->checkRoleQuery = new CheckRoleQuery($this->guildSettingsRepository);
         $this->commandHandler = new CommandHandler();
 
         $this->commandHandler->addCommands([
-            new Restart($this->logger, $this->discord),
-            new Help($this->logger),
+            new Help($this->logger, $this->commandHandler),
             new AddStreamer(
                 $this->logger,
                 $this->twitchWrapper,
                 $this->guildSettingsRepository,
-                $this->checkRoleQuery,
                 $this->streamerRepository,
             ),
             new RemoveStreamer(
                 $this->logger,
                 $this->guildSettingsRepository,
-                $this->checkRoleQuery,
-            ),
-            new SetPrefix(
-                $this->logger,
-                $this->guildSettingsRepository,
-                $this->checkRoleQuery,
-            ),
-            new SetChannel(
-                $this->logger,
-                $this->guildSettingsRepository,
-                $this->checkRoleQuery,
             ),
             new ListStreamers(
                 $this->logger,
                 $this->guildSettingsRepository
-            ),
-            new RoleLimit(
-                $this->logger,
-                $this->guildSettingsRepository,
-                $this->checkRoleQuery,
             ),
         ]);
     }
 
     public function run(): void
     {
-        $this->discord->on('ready', function () {
+        $this->discord->on('ready', function (Discord $discord) {
+            foreach ($this->commandHandler->getCommands() as $cmd) {
+                $this->discord->application->commands->save(
+                    $this->discord->application->commands->create(
+                        $cmd->getCommand($this->discord)->toArray()
+                    )
+                );
+            }
+
             $this->logger->info('Bot is ready!');
         });
 
-        $this->discord->on('message', function (Message $message) {
-            try {
-                $guild = $message->channel->guild_id;
-                $guildSettings = $this->guildSettingsRepository->load($guild);
-                $command = $this->commandHandler->parseCommand(
-                    $guildSettings->getPrefix(),
-                    $message->content
-                );
-
-                if ($command !== null) {
-                    $command->execute($message);
-                }
-            } catch (\Throwable $th) {
-                $this->logger->error($th->getMessage());
-            }
+        $this->discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction) {
+            $this->commandHandler->handle($interaction);
         });
 
         $notify = new NotifyDiscordGuilds(
