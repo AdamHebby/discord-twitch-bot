@@ -61,9 +61,8 @@ class AddStreamer extends Command
     {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        $options = $interaction->data->options;
-
-        $streamer      = $options['streamer']->value;
+        $options       = $interaction->data->options;
+        $streamer      = strtolower($options['streamer']->value);
         $channel       = $options['channel']->value;
         $customMessage = $options['custom_message']?->value;
         $guildSettings = $this->guildSettingsRepository->load($interaction->channel->guild_id);
