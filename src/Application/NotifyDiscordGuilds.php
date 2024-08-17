@@ -9,6 +9,7 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
 use DiscordTwitchBot\Model\Stream;
+use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
 
 class NotifyDiscordGuilds
@@ -19,6 +20,7 @@ class NotifyDiscordGuilds
         private readonly TwitchWrapper $twitchWrapper,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
+        private readonly StreamerRepository $streamerRepository,
     ) {
     }
 
@@ -49,6 +51,8 @@ class NotifyDiscordGuilds
                     continue;
                 }
 
+                $streamer = $this->streamerRepository->getStreamerByLogin($stream->getUserLogin());
+
                 if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
                     $this->logger->debug(
                         "Notify: Stream {$stream->getId()} already notified in guild {$guild->name}. Skipping."
@@ -63,7 +67,7 @@ class NotifyDiscordGuilds
                     continue;
                 }
 
-                $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $stream);
+                $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $streamer, $stream);
                 $channel = $guildSettings->getChannel();
 
                 $discordChannel = $guild->channels->get('id', $channel);

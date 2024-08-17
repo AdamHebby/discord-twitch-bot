@@ -19,6 +19,7 @@ use DiscordTwitchBot\Command\SetChannel;
 use DiscordTwitchBot\Command\SetPrefix;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
+use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
 
 class Bot
@@ -32,6 +33,7 @@ class Bot
         private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
+        private readonly StreamerRepository $streamerRepository,
     ) {
         $this->checkRoleQuery = new CheckRoleQuery($this->guildSettingsRepository);
         $this->commandHandler = new CommandHandler();
@@ -44,6 +46,7 @@ class Bot
                 $this->twitchWrapper,
                 $this->guildSettingsRepository,
                 $this->checkRoleQuery,
+                $this->streamerRepository,
             ),
             new RemoveStreamer(
                 $this->logger,
@@ -100,7 +103,8 @@ class Bot
             $this->discord,
             $this->twitchWrapper,
             $this->guildSettingsRepository,
-            $this->notifiedStreamsRepository
+            $this->notifiedStreamsRepository,
+            $this->streamerRepository,
         );
 
         $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {

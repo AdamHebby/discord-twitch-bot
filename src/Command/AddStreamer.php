@@ -8,6 +8,7 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\CheckRoleQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
+use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
 
 class AddStreamer extends Command
@@ -17,6 +18,7 @@ class AddStreamer extends Command
         private readonly TwitchWrapper $twitchApi,
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly CheckRoleQuery $checkRoleQuery,
+        private readonly StreamerRepository $streamerRepository,
     ) {
     }
 
@@ -41,15 +43,23 @@ class AddStreamer extends Command
         array_shift($args);
         $customMessage = implode(' ', $args);
 
+        if (empty($customMessage)) {
+            $customMessage = null;
+        }
+
         if ($guildSettings->hasStreamer($streamer)) {
             $message->reply("{$streamer} is already being watched!");
             return;
         }
 
-        if (!$this->twitchApi->checkStreamerExists($streamer)) {
+        $streamerObject = $this->twitchApi->getStreamer($streamer);
+
+        if ($streamerObject === null) {
             $message->reply("{$streamer} is not a valid Twitch streamer!");
             return;
         }
+
+        $this->streamerRepository->add($streamerObject);
 
         $guildSettings->addStreamer($streamer, $customMessage);
         $this->guildSettingsRepository->save($guildSettings);

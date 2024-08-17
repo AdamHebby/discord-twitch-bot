@@ -4,6 +4,7 @@ namespace DiscordTwitchBot\ClientWrapper;
 
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Model\Stream;
+use DiscordTwitchBot\Model\Streamer;
 use TwitchApi\HelixGuzzleClient;
 use TwitchApi\TwitchApi;
 
@@ -35,6 +36,29 @@ class TwitchWrapper
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
 
         return $exists;
+    }
+
+    public function getStreamer(string $streamerLogin): ?Streamer
+    {
+        Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
+        $this->authorizeTwitchApi();
+
+        $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->bearerToken, $streamerLogin);
+        $contents = json_decode($response->getBody()->getContents(), true);
+        $streamer = null;
+
+        if (
+            $response->getStatusCode() === 200 &&
+            !empty($contents['data']) &&
+            isset($contents['data'][0]['login']) &&
+            $contents['data'][0]['login'] === $streamerLogin
+        ) {
+            $streamer = Streamer::fromJsonArray($contents['data'][0]);
+        }
+
+        Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+
+        return $streamer;
     }
 
     public function getStream(string $streamer): ?Stream

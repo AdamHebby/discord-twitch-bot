@@ -8,12 +8,14 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\EmbeddedMessage;
 use DiscordTwitchBot\Model\GuildSettings;
 use DiscordTwitchBot\Model\Stream;
+use DiscordTwitchBot\Model\Streamer;
 
 class DiscordLiveEmbedQuery
 {
     public static function generate(
         GuildSettings $guildSettings,
         Discord $discord,
+        Streamer $streamer,
         Stream $stream
     ): EmbeddedMessage {
         Benchmarker::getInstance()->start(__CLASS__);
@@ -30,7 +32,7 @@ class DiscordLiveEmbedQuery
             'author' => [
                 'name'     => $stream->getUserName() . " is now live on Twitch!",
                 'url'      => $streamUrl,
-                'icon_url' => 'https://icons.iconarchive.com/icons/papirus-team/papirus-apps/512/gnome-twitch-icon.png',
+                'icon_url' => $streamer->getProfileImageUrl(),
             ],
             'color'  => hexdec('6a44bc'),
             'timestamp' => $stream->getStartedAt()->format('c'),
@@ -42,9 +44,7 @@ class DiscordLiveEmbedQuery
         ]);
 
         // add Footer
-        $embed->setFooter(
-            'Made by .justabignerd',
-        );
+        $embed->setFooter('Made by .justabignerd');
 
         $customStreamerMessage = $guildSettings->getStreamerMessage($stream->getUserLogin());
 

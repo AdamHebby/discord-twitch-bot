@@ -8,6 +8,7 @@ use DiscordTwitchBot\Bot;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
+use DiscordTwitchBot\Repository\StreamerRepository;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LogLevel;
@@ -41,11 +42,18 @@ Benchmarker::getInstance()->start('Boot');
 (new Dotenv())->load(__DIR__ . '/../.env');
 
 $logFilePath = '/var/log/twitch-bot.log';
+$logLevel = LogLevel::INFO;
+
+if (!file_exists($logFilePath)) {
+    $logFilePath = 'php://stdout';
+    $logLevel = LogLevel::DEBUG;
+}
+
 $discordLogger = new Logger('Discord');
 $discordLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::WARNING));
 
 $botLogger = new Logger('TwitchBot');
-$botLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::INFO));
+$botLogger->pushHandler(new StreamHandler($logFilePath, $logLevel));
 
 $discord = new Discord([
     'logger' => $discordLogger,
@@ -119,6 +127,7 @@ $bot = new Bot(
     $botLogger,
     new GuildSettingsRepository(__DIR__ . '/../data/'),
     new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db'),
+    new StreamerRepository(__DIR__ . '/../data/streamer.db'),
 );
 
 Benchmarker::getInstance()->stop('Boot');
