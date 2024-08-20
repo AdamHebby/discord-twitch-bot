@@ -12,6 +12,8 @@ use DiscordTwitchBot\Model\Streamer;
 
 class DiscordLiveEmbedQuery
 {
+    public const DEFAULT_MSG = "Hey @everyone! {name} is now live on Twitch! They're playing {game}. Go check them out!";
+
     public static function generate(
         GuildSettings $guildSettings,
         Discord $discord,
@@ -49,8 +51,7 @@ class DiscordLiveEmbedQuery
         $customStreamerMessage = $guildSettings->getStreamerMessage($stream->getUserLogin());
 
         if ($customStreamerMessage === null) {
-            $customStreamerMessage = "Hey @everyone! {name} is now live on Twitch! " .
-                "They're playing {game}. Go check them out!";
+            $customStreamerMessage = self::DEFAULT_MSG;
         }
 
         $customStreamerMessage = str_replace('{name}', $stream->getEscapedUsername(), $customStreamerMessage);

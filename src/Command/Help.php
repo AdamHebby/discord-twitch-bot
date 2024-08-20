@@ -58,8 +58,8 @@ class Help extends Command
             'Help message shown to user %s (%s) in guild "%s" (%s)',
             $interaction->member->username,
             $interaction->member->id,
-            $interaction->channel->guild->name,
-            $interaction->channel->guild->id
+            $interaction->guild->name,
+            $interaction->guild_id
         ));
 
         Benchmarker::getInstance()->stop(__CLASS__);

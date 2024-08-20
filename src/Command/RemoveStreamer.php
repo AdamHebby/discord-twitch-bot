@@ -43,7 +43,7 @@ class RemoveStreamer extends Command
         Benchmarker::getInstance()->start(__CLASS__);
 
         $streamer = $interaction->data['options']['streamer']->value;
-        $guildSettings = $this->guildSettingsRepository->load($interaction->channel->guild_id);
+        $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
         if ($guildSettings->hasStreamer($streamer)) {
             $this->interactionReply($interaction, "{$streamer} is not being watched!");
@@ -58,8 +58,8 @@ class RemoveStreamer extends Command
         $this->logger->info(sprintf(
             'Removed streamer %s from guild "%s" (%s) by user "%s" (%s)',
             $streamer,
-            $interaction->channel->guild->name,
-            $interaction->channel->guild->id,
+            $interaction->guild->name,
+            $interaction->guild_id,
             $interaction->member->username,
             $interaction->member->id
         ));

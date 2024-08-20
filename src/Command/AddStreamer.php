@@ -9,6 +9,7 @@ use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
+use React\Promise\Promise;
 
 class AddStreamer extends Command
 {
@@ -50,7 +51,7 @@ class AddStreamer extends Command
             ]),
             new CommandOption([
                 'name'        => 'custom_message',
-                'description' => 'A custom message to post when the streamer goes live.',
+                'description' => 'A custom message to post when the streamer goes live. Use {name} and {game} for dynamic content.',
                 'type'        => Option::STRING,
                 'required'    => false,
             ]),
@@ -65,7 +66,7 @@ class AddStreamer extends Command
         $streamer      = strtolower($options['streamer']->value);
         $channel       = $options['channel']->value;
         $customMessage = $options['custom_message']?->value;
-        $guildSettings = $this->guildSettingsRepository->load($interaction->channel->guild_id);
+        $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
         if (empty($customMessage) || $customMessage === null) {
             $customMessage = null;
@@ -110,8 +111,8 @@ class AddStreamer extends Command
         $this->logger->info(sprintf(
             'Added streamer %s to guild "%s" (%s) by user %s (%s) with custom message "%s"',
             $streamer,
-            $interaction->channel->guild->name,
-            $interaction->channel->guild->id,
+            $interaction->guild->name,
+            $interaction->guild_id,
             $interaction->member->username,
             $interaction->member->id,
             $customMessage

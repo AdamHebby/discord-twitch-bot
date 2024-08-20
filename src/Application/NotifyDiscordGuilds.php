@@ -48,50 +48,51 @@ class NotifyDiscordGuilds
                 }
 
                 if ($stream === null) {
+                    $this->logger->debug("Notify: Stream {$streamer} is offline. Skipping.");
                     continue;
                 }
 
-                $streamer = $this->streamerRepository->getStreamerByLogin($stream->getUserLogin());
-
-                if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
-                    $this->logger->debug(
-                        "Notify: Stream {$stream->getId()} already notified in guild {$guild->name}. Skipping."
-                    );
-                    continue;
-                }
-
-                if ($this->notifiedStreamsRepository->isNotifiedRestartedStream($stream->getUserLogin(), $guild->id)) {
-                    $this->logger->debug(
-                        "Notify: Stream {$stream->getId()} restarted in guild {$guild->name}. Skipping."
-                    );
-                    continue;
-                }
-
-                $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $streamer, $stream);
-                $channel = $guildSettings->getChannel();
-
-                $discordChannel = $guild->channels->get('id', $channel);
-                if ($discordChannel === null) {
-                    $discordChannel = $guild->channels->get('id', $channel);
-                } else {
-                    $guildSettings->setChannel($discordChannel->id);
-                    $this->guildSettingsRepository->save($guildSettings);
-                }
-
-                if ($discordChannel === null) {
-                    $this->logger->error("Notify: Channel {$channel} not found in guild {$guild->name}");
-                    continue;
-                }
-
-                $discordChannel->sendMessage($message->message, false, $message->embed)->done(
-                    function () use ($stream, $guild) {
-                        $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
-                        $this->notifiedStreamsRepository->add($stream->getUserLogin(), $stream->getId(), $guild->id);
-                    }
-                );
+                $this->notifyStream($guild, $stream);
             }
         }
 
         Benchmarker::getInstance()->stop(__CLASS__);
+    }
+
+    private function notifyStream(Guild $guild, Stream $stream): void
+    {
+        $streamer = $this->streamerRepository->getStreamerByLogin($stream->getUserLogin());
+        $guildSettings = $this->guildSettingsRepository->load($guild->id);
+
+        if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
+            $this->logger->debug(
+                "Notify: Stream {$stream->getId()} already notified in guild {$guild->name}. Skipping."
+            );
+            return;
+        }
+
+        if ($this->notifiedStreamsRepository->isNotifiedRestartedStream($stream->getUserLogin(), $guild->id)) {
+            $this->logger->debug(
+                "Notify: Stream {$stream->getId()} restarted in guild {$guild->name}. Skipping."
+            );
+            return;
+        }
+
+        $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $streamer, $stream);
+        $channel = $guildSettings->getStreamerChannel($stream->getUserLogin());
+
+        $discordChannel = $this->discord->getChannel($channel);
+
+        if ($discordChannel === null) {
+            $this->logger->error("Notify: Channel {$channel} not found in guild {$guild->name}");
+            return;
+        }
+
+        $discordChannel->sendMessage($message->message, false, $message->embed)->done(
+            function () use ($stream, $guild) {
+                $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
+                $this->notifiedStreamsRepository->add($stream->getUserLogin(), $stream->getId(), $guild->id);
+            }
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace DiscordTwitchBot;
 
 use Discord\Discord;
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
@@ -53,20 +54,34 @@ class Bot
 
     public function run(): void
     {
-        $this->discord->on('ready', function (Discord $discord) {
+        $this->discord->on('ready', function () {
             foreach ($this->commandHandler->getCommands() as $cmd) {
                 $this->discord->application->commands->save(
                     $this->discord->application->commands->create(
                         $cmd->getCommand($this->discord)->toArray()
                     )
                 );
+
+                $this->logger->info("Command /{$cmd->getName()} registered");
             }
 
             $this->logger->info('Bot is ready!');
         });
 
         $this->discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction) {
+            $this->logger->info('Interaction received: /' . $interaction->data->name);
             $this->commandHandler->handle($interaction);
+        });
+
+        $this->discord->on(Event::MESSAGE_CREATE, function (Message $message) {
+            if ($message->content === '!sb restart' && $message->author->id === $_ENV['DISCORD_OWNER_ID']) {
+                $message->react('👍')->done(function () {
+                    sleep(1);
+                    $this->logger->info('Restarting bot...');
+                    $this->discord->close();
+                    exit();
+                });
+            }
         });
 
         $notify = new NotifyDiscordGuilds(
@@ -83,6 +98,7 @@ class Bot
                 $notify->execute();
             } catch (\Throwable $th) {
                 $this->logger->error($th->getMessage());
+                $this->logger->error($th->getTraceAsString());
             }
         });
 
