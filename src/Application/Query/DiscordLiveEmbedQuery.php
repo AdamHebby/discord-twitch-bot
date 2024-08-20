@@ -12,7 +12,8 @@ use DiscordTwitchBot\Model\Streamer;
 
 class DiscordLiveEmbedQuery
 {
-    public const DEFAULT_MSG = "Hey @everyone! {name} is now live on Twitch! They're playing {game}. Go check them out!";
+    public const DEFAULT_MSG = "Hey @everyone! {name} is now live on Twitch! "
+        . "They're playing {game}. Go check them out!";
 
     public static function generate(
         GuildSettings $guildSettings,

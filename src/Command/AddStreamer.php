@@ -51,7 +51,8 @@ class AddStreamer extends Command
             ]),
             new CommandOption([
                 'name'        => 'custom_message',
-                'description' => 'A custom message to post when the streamer goes live. Use {name} and {game} for dynamic content.',
+                'description' => 'A custom message to post when the streamer goes live. '
+                    . 'Use {name} and {game} for dynamic content. Leave blank to use the default message.',
                 'type'        => Option::STRING,
                 'required'    => false,
             ]),
@@ -85,7 +86,10 @@ class AddStreamer extends Command
             $oldMessage = $guildSettings->getStreamerMessage($streamer);
 
             if ($oldChannel === $channel->id && $oldMessage === $customMessage) {
-                $this->interactionReply($interaction, "{$streamer} is already being watched in that channel with that message!");
+                $this->interactionReply(
+                    $interaction,
+                    "{$streamer} is already being watched in that channel with that message!"
+                );
                 return;
             }
         }
@@ -103,9 +107,15 @@ class AddStreamer extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         if ($alreadyWatching) {
-            $this->interactionReply($interaction, "{$streamer} is already being watched, but I've updated the channel and message!");
+            $this->interactionReply(
+                $interaction,
+                "{$streamer} is already being watched, but I've updated the channel and message!"
+            );
         } else {
-            $this->interactionReply($interaction, "{$streamer} is now being watched!");
+            $this->interactionReply(
+                $interaction,
+                "{$streamer} is now being watched!"
+            );
         }
 
         $this->logger->info(sprintf(
