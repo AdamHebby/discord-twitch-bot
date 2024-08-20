@@ -22,40 +22,40 @@ class DiscordLiveEmbedQuery
     ): EmbeddedMessage {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        $streamUrl   = "https://www.twitch.tv/{$stream->getUserLogin()}?referrer=discord";
+        $streamUrl   = "https://www.twitch.tv/{$stream->userLogin}?referrer=discord";
         $previewLink = $stream->getThumbnailUrl();
         $previewLink = str_replace('{width}', '1920', $previewLink);
         $previewLink = str_replace('{height}', '1080', $previewLink);
 
         $embed = new Embed($discord, [
-            'title'  => $stream->getTitle(),
+            'title'  => $stream->title,
             'url'    => $streamUrl,
             'image'  => ['url' => $previewLink],
             'author' => [
-                'name'     => $stream->getUserName() . " is now live on Twitch!",
+                'name'     => $stream->userName . " is now live on Twitch!",
                 'url'      => $streamUrl,
-                'icon_url' => $streamer->getProfileImageUrl(),
+                'icon_url' => $streamer->profileImageUrl,
             ],
             'color'  => hexdec('6a44bc'),
-            'timestamp' => $stream->getStartedAt()->format('c'),
+            'timestamp' => $stream->startedAt->format('c'),
         ]);
 
         $embed->addField([
             'name' => 'Game',
-            'value' => $stream->getGameName(),
+            'value' => $stream->gameName,
         ]);
 
         // add Footer
         $embed->setFooter('Made by .justabignerd');
 
-        $customStreamerMessage = $guildSettings->getStreamerMessage($stream->getUserLogin());
+        $customStreamerMessage = $guildSettings->getStreamerMessage($stream->userLogin);
 
         if ($customStreamerMessage === null) {
             $customStreamerMessage = self::DEFAULT_MSG;
         }
 
         $customStreamerMessage = str_replace('{name}', $stream->getEscapedUsername(), $customStreamerMessage);
-        $customStreamerMessage = str_replace('{game}', $stream->getGameName(), $customStreamerMessage);
+        $customStreamerMessage = str_replace('{game}', $stream->gameName, $customStreamerMessage);
 
         Benchmarker::getInstance()->stop(__CLASS__);
 

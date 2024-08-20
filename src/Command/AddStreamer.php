@@ -68,7 +68,7 @@ class AddStreamer extends Command
         $customMessage = $options['custom_message']?->value;
         $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
-        if (empty($customMessage) || $customMessage === null) {
+        if (empty($customMessage) || $customMessage == null) {
             $customMessage = null;
         }
 

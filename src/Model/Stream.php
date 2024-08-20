@@ -12,42 +12,22 @@ class Stream
      * @param array<int> $tagIds
      */
     public function __construct(
-        private readonly string $id,
-        private readonly string $userId,
-        private readonly string $userLogin,
-        private readonly string $userName,
-        private readonly string $gameId,
-        private readonly string $gameName,
-        private readonly string $type,
-        private readonly string $title,
-        private readonly array $tags,
-        private readonly int $viewerCount,
-        private readonly DateTimeImmutable $startedAt,
-        private readonly string $language,
-        private readonly string $thumbnailUrl,
-        private readonly array $tagIds,
-        private readonly bool $isMature,
+        public readonly string $id,
+        public readonly string $userId,
+        public readonly string $userLogin,
+        public readonly string $userName,
+        public readonly string $gameId,
+        public readonly string $gameName,
+        public readonly string $type,
+        public readonly string $title,
+        public readonly array $tags,
+        public readonly int $viewerCount,
+        public readonly DateTimeImmutable $startedAt,
+        public readonly string $language,
+        public readonly string $thumbnailUrl,
+        public readonly array $tagIds,
+        public readonly bool $isMature,
     ) {
-    }
-
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function getUserId(): string
-    {
-        return $this->userId;
-    }
-
-    public function getUserLogin(): string
-    {
-        return $this->userLogin;
-    }
-
-    public function getUserName(): string
-    {
-        return $this->userName;
     }
 
     public function getEscapedUsername(): string
@@ -60,65 +40,9 @@ class Stream
         return str_replace("_", "\\_", $this->userLogin);
     }
 
-    public function getGameId(): string
-    {
-        return $this->gameId;
-    }
-
-    public function getGameName(): string
-    {
-        return $this->gameName;
-    }
-
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    /**
-     * @return array<string>
-     */
-    public function getTags(): array
-    {
-        return $this->tags;
-    }
-
-    public function getViewerCount(): int
-    {
-        return $this->viewerCount;
-    }
-
-    public function getStartedAt(): DateTimeImmutable
-    {
-        return $this->startedAt;
-    }
-
-    public function getLanguage(): string
-    {
-        return $this->language;
-    }
-
     public function getThumbnailUrl(int $width = 1920, int $height = 1080): string
     {
         return str_replace(['{width}', '{height}'], [$width, $height], $this->thumbnailUrl);
-    }
-
-    /**
-     * @return array<int>
-     */
-    public function getTagIds(): array
-    {
-        return $this->tagIds;
-    }
-
-    public function isMature(): bool
-    {
-        return $this->isMature;
     }
 
     /**

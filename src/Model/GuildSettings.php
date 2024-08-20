@@ -6,6 +6,7 @@ class GuildSettings
 {
     /**
      * @param array<string,string|null> $streamers
+     * @param array<string,string> $channels
      */
     public function __construct(
         private string $guildId,
@@ -53,6 +54,9 @@ class GuildSettings
         unset($this->streamers[$streamer]);
     }
 
+    /**
+     * @return array<string,string|null>
+     */
     public function getChannels(): array
     {
         return $this->channels;

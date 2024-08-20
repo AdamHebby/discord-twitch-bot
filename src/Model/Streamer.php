@@ -8,67 +8,17 @@ use DateTimeZone;
 class Streamer
 {
     public function __construct(
-        private string $id,
-        private string $login,
-        private string $displayName,
-        private string $type,
-        private string $broadcasterType,
-        private string $description,
-        private string $profileImageUrl,
-        private string $offlineImageUrl,
-        private int $viewCount,
-        private DateTimeImmutable $createdAt,
+        public readonly string $id,
+        public readonly string $login,
+        public readonly string $displayName,
+        public readonly string $type,
+        public readonly string $broadcasterType,
+        public readonly string $description,
+        public readonly string $profileImageUrl,
+        public readonly string $offlineImageUrl,
+        public readonly int $viewCount,
+        public readonly DateTimeImmutable $createdAt,
     ) {
-    }
-
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function getLogin(): string
-    {
-        return $this->login;
-    }
-
-    public function getDisplayName(): string
-    {
-        return $this->displayName;
-    }
-
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    public function getBroadcasterType(): string
-    {
-        return $this->broadcasterType;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
-    }
-
-    public function getProfileImageUrl(): string
-    {
-        return $this->profileImageUrl;
-    }
-
-    public function getOfflineImageUrl(): string
-    {
-        return $this->offlineImageUrl;
-    }
-
-    public function getViewCount(): int
-    {
-        return $this->viewCount;
-    }
-
-    public function getCreatedAt(): DateTimeImmutable
-    {
-        return $this->createdAt;
     }
 
     /**
@@ -91,6 +41,9 @@ class Streamer
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

@@ -78,6 +78,9 @@ class StreamerRepository extends SqlLiteDatabaseRepository
         $stmt->execute(['id' => $streamerId]);
     }
 
+    /**
+     * @return Streamer[]
+     */
     public function getAll(): array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM streamer');

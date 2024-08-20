@@ -40,9 +40,9 @@ class NotifyDiscordGuilds
 
             foreach ($streamers as $streamer) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
-                if (isset($streamerCache[$streamer])) {
-                    $stream = $streamerCache[$streamer];
-                } else {
+
+                $stream = $streamerCache[$streamer] ?? null;
+                if ($stream === null) {
                     $stream = $this->twitchWrapper->getStream($streamer);
                     $streamerCache[$streamer] = $stream;
                 }
@@ -61,25 +61,25 @@ class NotifyDiscordGuilds
 
     private function notifyStream(Guild $guild, Stream $stream): void
     {
-        $streamer = $this->streamerRepository->getStreamerByLogin($stream->getUserLogin());
+        $streamer = $this->streamerRepository->getStreamerByLogin($stream->userLogin);
         $guildSettings = $this->guildSettingsRepository->load($guild->id);
 
-        if ($this->notifiedStreamsRepository->isNotified($stream->getId(), $guild->id)) {
+        if ($this->notifiedStreamsRepository->isNotified($stream->id, $guild->id)) {
             $this->logger->debug(
-                "Notify: Stream {$stream->getId()} already notified in guild {$guild->name}. Skipping."
+                "Notify: Stream {$stream->id} already notified in guild {$guild->name}. Skipping."
             );
             return;
         }
 
-        if ($this->notifiedStreamsRepository->isNotifiedRestartedStream($stream->getUserLogin(), $guild->id)) {
+        if ($this->notifiedStreamsRepository->isNotifiedRestartedStream($stream->userLogin, $guild->id)) {
             $this->logger->debug(
-                "Notify: Stream {$stream->getId()} restarted in guild {$guild->name}. Skipping."
+                "Notify: Stream {$stream->id} restarted in guild {$guild->name}. Skipping."
             );
             return;
         }
 
         $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $streamer, $stream);
-        $channel = $guildSettings->getStreamerChannel($stream->getUserLogin());
+        $channel = $guildSettings->getStreamerChannel($stream->userLogin);
 
         $discordChannel = $this->discord->getChannel($channel);
 
@@ -90,8 +90,8 @@ class NotifyDiscordGuilds
 
         $discordChannel->sendMessage($message->message, false, $message->embed)->done(
             function () use ($stream, $guild) {
-                $this->logger->info("Notify: Stream {$stream->getId()} notified in guild {$guild->name}");
-                $this->notifiedStreamsRepository->add($stream->getUserLogin(), $stream->getId(), $guild->id);
+                $this->logger->info("Notify: Stream {$stream->id} notified in guild {$guild->name}");
+                $this->notifiedStreamsRepository->add($stream->userLogin, $stream->id, $guild->id);
             }
         );
     }
