@@ -27,6 +27,8 @@ class Streamer
     public static function fromJsonArray(array $data): self
     {
         $utc = new DateTimeZone("UTC");
+        $defaultNow = new DateTimeImmutable("now", $utc);
+
         return new self(
             $data["id"],
             $data["login"],
@@ -37,7 +39,11 @@ class Streamer
             $data["profile_image_url"],
             $data["offline_image_url"],
             $data["view_count"],
-            DateTimeImmutable::createFromFormat(DateTimeImmutable::RFC3339, $data["created_at"], $utc),
+            DateTimeImmutable::createFromFormat(
+                DateTimeImmutable::RFC3339,
+                $data["created_at"],
+                $utc
+            ) ?: $defaultNow,
         );
     }
 

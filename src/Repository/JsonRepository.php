@@ -21,6 +21,12 @@ abstract class JsonRepository implements RepositoryInterface
             return [];
         }
 
-        return json_decode(file_get_contents($path), true);
+        $data = file_get_contents($path);
+
+        if ($data === false || empty($data)) {
+            return [];
+        }
+
+        return json_decode($data, true);
     }
 }

@@ -51,6 +51,8 @@ class Stream
     public static function fromJsonArray(array $data): self
     {
         $utc = new DateTimeZone("UTC");
+        $defaultNow = new DateTimeImmutable("now", $utc);
+
         return new self(
             $data["id"],
             $data["user_id"],
@@ -62,7 +64,11 @@ class Stream
             $data["title"],
             $data["tags"],
             $data["viewer_count"],
-            DateTimeImmutable::createFromFormat(DateTimeImmutable::RFC3339, $data["started_at"], $utc),
+            DateTimeImmutable::createFromFormat(
+                DateTimeImmutable::RFC3339,
+                $data["started_at"],
+                $utc
+            ) ?: $defaultNow,
             $data["language"],
             $data["thumbnail_url"],
             $data["tag_ids"],
