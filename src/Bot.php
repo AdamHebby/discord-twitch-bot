@@ -8,6 +8,7 @@ use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\NotifyDiscordGuilds;
+use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Command\AddStreamer;
 use DiscordTwitchBot\Command\CommandHandler;
@@ -91,6 +92,7 @@ class Bot
             $this->guildSettingsRepository,
             $this->notifiedStreamsRepository,
             $this->streamerRepository,
+            new DiscordLiveEmbedQuery($this->discord)
         );
 
         $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {

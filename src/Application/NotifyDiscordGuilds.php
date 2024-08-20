@@ -21,6 +21,7 @@ class NotifyDiscordGuilds
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
         private readonly StreamerRepository $streamerRepository,
+        private readonly DiscordLiveEmbedQuery $discordLiveEmbedQuery,
     ) {
     }
 
@@ -78,7 +79,7 @@ class NotifyDiscordGuilds
             return;
         }
 
-        $message = DiscordLiveEmbedQuery::generate($guildSettings, $this->discord, $streamer, $stream);
+        $message = $this->discordLiveEmbedQuery->generate($guildSettings, $streamer, $stream);
         $channel = $guildSettings->getStreamerChannel($stream->userLogin);
 
         $discordChannel = $this->discord->getChannel($channel);

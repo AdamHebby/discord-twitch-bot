@@ -12,12 +12,16 @@ use DiscordTwitchBot\Model\Streamer;
 
 class DiscordLiveEmbedQuery
 {
+    public function __construct(
+        private readonly Discord $discord,
+    ) {
+    }
+
     public const DEFAULT_MSG = "Hey @everyone! {name} is now live on Twitch! "
         . "They're playing {game}. Go check them out!";
 
-    public static function generate(
+    public function generate(
         GuildSettings $guildSettings,
-        Discord $discord,
         Streamer $streamer,
         Stream $stream
     ): EmbeddedMessage {
@@ -28,7 +32,7 @@ class DiscordLiveEmbedQuery
         $previewLink = str_replace('{width}', '1920', $previewLink);
         $previewLink = str_replace('{height}', '1080', $previewLink);
 
-        $embed = new Embed($discord, [
+        $embed = new Embed($this->discord, [
             'title'  => $stream->title,
             'url'    => $streamUrl,
             'image'  => ['url' => $previewLink],
