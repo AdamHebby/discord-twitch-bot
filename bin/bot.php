@@ -39,15 +39,17 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 Benchmarker::getInstance()->start('Boot');
 
-(new Dotenv())->load(__DIR__ . '/../.env');
-
 $logFilePath = '/var/log/twitch-bot.log';
 $logLevel = LogLevel::INFO;
+$envPath = __DIR__ . '/../.env';
 
 if (!file_exists($logFilePath)) {
+    $envPath = __DIR__ . '/../.env.dev';
     $logFilePath = 'php://stdout';
     $logLevel = LogLevel::DEBUG;
 }
+
+(new Dotenv())->load($envPath);
 
 $discordLogger = new Logger('Discord');
 $discordLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::WARNING));
