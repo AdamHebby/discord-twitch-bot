@@ -43,15 +43,16 @@ class DiscordLiveEmbedQuery
             ],
             'color'  => hexdec('6a44bc'),
             'timestamp' => $stream->startedAt->format('c'),
+            'fields' => [
+                [
+                    'name'  => 'Game',
+                    'value' => $stream->gameName,
+                ]
+            ],
+            'footer' => [
+                'text' => 'Made by .justabignerd',
+            ]
         ]);
-
-        $embed->addField([
-            'name' => 'Game',
-            'value' => $stream->gameName,
-        ]);
-
-        // add Footer
-        $embed->setFooter('Made by .justabignerd');
 
         $customStreamerMessage = $guildSettings->getStreamerMessage($stream->userLogin);
 
