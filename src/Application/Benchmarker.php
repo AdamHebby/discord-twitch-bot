@@ -53,7 +53,7 @@ class Benchmarker
             return 0;
         }
 
-        return array_sum($this->timings[$key]) / count($this->timings[$key]);
+        return (float) sprintf('%.3f', array_sum($this->timings[$key]) / count($this->timings[$key]));
     }
 
     /**
@@ -65,7 +65,7 @@ class Benchmarker
 
         foreach ($this->timings as $key => $timings) {
             $suffix = '_AO_' . count($timings);
-            $averages[$key . $suffix] = (float) sprintf('%.3f', array_sum($timings) / count($timings));
+            $averages[$key . $suffix] = $this->avg($key);
         }
 
         return $averages;
