@@ -4,14 +4,23 @@
     "require": {
         "team-reflex/discord-php": "^7.3",
         "nicklaw5/twitch-api-php": "^7.2",
-        "symfony/dotenv": "^7.1"
+        "symfony/dotenv": "^7.1",
+        "php": "^8.2"
     },
     "autoload": {
         "psr-4": {
-            "DiscordTwitchBot\\": "src/"
+            "DiscordTwitchBot\\": "src/",
+            "DiscordTwitchBot\\Test\\": "tests"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
         }
     },
     "require-dev": {
-        "phpstan/phpstan": "^1.11"
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^11.3",
+        "phpunit/php-code-coverage": "^11.0"
     }
 }

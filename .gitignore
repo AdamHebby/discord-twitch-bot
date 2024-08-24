@@ -1,6 +1,9 @@
-.env
+.env*
+!.env.example
 deploy
 rsync-ignore.txt
 vendor
 data
 lock
+.phpunit.cache
+build
