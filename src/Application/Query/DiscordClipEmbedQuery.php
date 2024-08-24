@@ -22,8 +22,7 @@ class DiscordClipEmbedQuery
     ): EmbeddedMessage {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        var_dump($clip->gameId);
-        $gameName = $this->gameRepository->get($clip->gameId);
+        $gameName  = $this->gameRepository->get($clip->gameId);
         $gameField = $gameName ? ['name' => 'Game', 'value' => $gameName] : null;
 
         $embed = new Embed($this->discord, [

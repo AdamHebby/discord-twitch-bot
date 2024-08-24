@@ -12,16 +12,10 @@ use TwitchApi\TwitchApi;
 
 class TwitchWrapper
 {
-    private TwitchApi $twitchApi;
     private ?string $bearerToken = null;
 
-    // TODO: This should be injected via DI
-    public function __construct(
-        private string $clientId,
-        private string $clientSecret,
-    ) {
-        $helixGuzzleClient = new HelixGuzzleClient($this->clientId);
-        $this->twitchApi   = new TwitchApi($helixGuzzleClient, $this->clientId, $this->clientSecret);
+    public function __construct(private TwitchApi $twitchApi)
+    {
     }
 
     public function checkStreamerExists(string $streamer): bool

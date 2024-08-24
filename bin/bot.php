@@ -15,6 +15,8 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LogLevel;
 use Symfony\Component\Dotenv\Dotenv;
+use TwitchApi\HelixGuzzleClient;
+use TwitchApi\TwitchApi;
 
 if (file_exists(__DIR__ . '/../lock') && filemtime(__DIR__ . '/../lock') > time() - 55) {
     echo "Bot is already running", PHP_EOL;
@@ -127,7 +129,13 @@ $discord = new Discord([
 
 $bot = new Bot(
     $discord,
-    new TwitchWrapper($_ENV['TWITCH_CLIENT_ID'], $_ENV['TWITCH_CLIENT_SECRET']),
+    new TwitchWrapper(
+        new TwitchApi(
+            new HelixGuzzleClient($_ENV['TWITCH_CLIENT_ID']),
+            $_ENV['TWITCH_CLIENT_ID'],
+            $_ENV['TWITCH_CLIENT_SECRET']
+        )
+    ),
     $botLogger,
     new GuildSettingsRepository(__DIR__ . '/../data/'),
     new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db'),
