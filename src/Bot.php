@@ -7,7 +7,9 @@ use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
-use DiscordTwitchBot\Application\NotifyDiscordGuilds;
+use DiscordTwitchBot\Application\NotifyDiscordClips;
+use DiscordTwitchBot\Application\NotifyDiscordLiveStreams;
+use DiscordTwitchBot\Application\Query\DiscordClipEmbedQuery;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Command\AddStreamer;
@@ -15,7 +17,14 @@ use DiscordTwitchBot\Command\CommandHandler;
 use DiscordTwitchBot\Command\Help;
 use DiscordTwitchBot\Command\ListStreamers;
 use DiscordTwitchBot\Command\RemoveStreamer;
+use DiscordTwitchBot\Command\UnwatchClips;
+use DiscordTwitchBot\Command\WatchClips;
+use DiscordTwitchBot\Model\GuildSettings;
+use DiscordTwitchBot\Model\Stream;
+use DiscordTwitchBot\Model\Streamer;
+use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
+use DiscordTwitchBot\Repository\NotifiedClipsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
@@ -31,6 +40,8 @@ class Bot
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
         private readonly StreamerRepository $streamerRepository,
+        private readonly GameRepository $gameRepository,
+        private readonly NotifiedClipsRepository $notifiedClipsRepository,
     ) {
         $this->commandHandler = new CommandHandler();
 
@@ -50,6 +61,16 @@ class Bot
                 $this->logger,
                 $this->guildSettingsRepository
             ),
+            new WatchClips(
+                $this->logger,
+                $this->twitchWrapper,
+                $this->streamerRepository,
+                $this->guildSettingsRepository,
+            ),
+            new UnwatchClips(
+                $this->logger,
+                $this->guildSettingsRepository,
+            )
         ]);
     }
 
@@ -85,19 +106,40 @@ class Bot
             }
         });
 
-        $notify = new NotifyDiscordGuilds(
+        $notify = new NotifyDiscordLiveStreams(
             $this->logger,
             $this->discord,
             $this->twitchWrapper,
             $this->guildSettingsRepository,
             $this->notifiedStreamsRepository,
             $this->streamerRepository,
-            new DiscordLiveEmbedQuery($this->discord)
+            new DiscordLiveEmbedQuery($this->discord),
+            $this->gameRepository
+        );
+
+        $clipNotify = new NotifyDiscordClips(
+            $this->logger,
+            $this->discord,
+            $this->twitchWrapper,
+            $this->guildSettingsRepository,
+            $this->streamerRepository,
+            new DiscordClipEmbedQuery($this->discord, $this->gameRepository),
+            $this->gameRepository,
+            $this->notifiedClipsRepository
         );
 
         $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {
             try {
                 $notify->execute();
+            } catch (\Throwable $th) {
+                $this->logger->error($th->getMessage());
+                $this->logger->error($th->getTraceAsString());
+            }
+        });
+
+        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () use ($clipNotify) {
+            try {
+                $clipNotify->execute();
             } catch (\Throwable $th) {
                 $this->logger->error($th->getMessage());
                 $this->logger->error($th->getTraceAsString());

@@ -12,6 +12,7 @@ class GuildSettings
         private string $guildId,
         private array $streamers = [],
         private array $channels = [],
+        private array $clipChannels = [],
     ) {
     }
 
@@ -62,6 +63,29 @@ class GuildSettings
         return $this->channels;
     }
 
+    public function addClipChannel(string $streamer, string $channel): void
+    {
+        $this->clipChannels[$streamer] = $channel;
+    }
+
+    public function getClipChannel(string $streamer): ?string
+    {
+        return $this->clipChannels[$streamer] ?? null;
+    }
+
+    public function removeClipChannel(string $streamer): void
+    {
+        unset($this->clipChannels[$streamer]);
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public function getClipChannels(): array
+    {
+        return $this->clipChannels;
+    }
+
     /**
      * @param array<string,mixed> $data
      */
@@ -71,6 +95,7 @@ class GuildSettings
             $data['guildId'],
             $data['streamers'] ?? [],
             $data['channels'] ?? [],
+            $data['clipChannels'] ?? [],
         );
     }
 
@@ -83,6 +108,7 @@ class GuildSettings
             'guildId' => $this->guildId,
             'streamers' => $this->streamers,
             'channels' => $this->channels,
+            'clipChannels' => $this->clipChannels,
         ];
     }
 }

@@ -2,9 +2,11 @@
 
 namespace DiscordTwitchBot\ClientWrapper;
 
+use DateTimeImmutable;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Model\Stream;
 use DiscordTwitchBot\Model\Streamer;
+use DiscordTwitchBot\Model\TwitchClip;
 use TwitchApi\HelixGuzzleClient;
 use TwitchApi\TwitchApi;
 
@@ -13,6 +15,7 @@ class TwitchWrapper
     private TwitchApi $twitchApi;
     private ?string $bearerToken = null;
 
+    // TODO: This should be injected via DI
     public function __construct(
         private string $clientId,
         private string $clientSecret,
@@ -80,6 +83,33 @@ class TwitchWrapper
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
 
         return $stream;
+    }
+
+    public function getClips(string $streamerId, DateTimeImmutable $started, DateTimeImmutable $ended): array
+    {
+        Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
+
+        $this->authorizeTwitchApi();
+
+        $response = $this->twitchApi->getClipsApi()->getClipsByBroadcasterId(
+            $this->bearerToken,
+            $streamerId,
+            20,
+            null,
+            null,
+            // API Docs state RFC3339 format but that 400s. This format works.
+            $started->format('Y-m-d\TH:i:s\Z'),
+            $ended->format('Y-m-d\TH:i:s\Z'),
+        );
+
+        $contents = json_decode($response->getBody()->getContents(), true);
+
+        if (empty($contents['data'])) {
+            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            return [];
+        }
+
+        return array_map(static fn(array $clip) => TwitchClip::fromJsonArray($clip), $contents['data']);
     }
 
     private function authorizeTwitchApi(): void

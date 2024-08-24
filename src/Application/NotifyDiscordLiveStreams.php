@@ -9,11 +9,15 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
 use DiscordTwitchBot\Model\Stream;
+use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
 
-class NotifyDiscordGuilds
+class NotifyDiscordLiveStreams
 {
+    // TODO: This should be a cache service
+    private array $streamCache = [];
+
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly Discord $discord,
@@ -22,6 +26,7 @@ class NotifyDiscordGuilds
         private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
         private readonly StreamerRepository $streamerRepository,
         private readonly DiscordLiveEmbedQuery $discordLiveEmbedQuery,
+        private readonly GameRepository $gameRepository,
     ) {
     }
 
@@ -29,9 +34,6 @@ class NotifyDiscordGuilds
     {
         Benchmarker::getInstance()->start(__CLASS__);
         $guilds = $this->discord->guilds;
-
-        /** @var array<string, Stream> */
-        $streamerCache = [];
 
         /** @var Guild $guild */
         foreach ($guilds as $guild) {
@@ -42,15 +44,19 @@ class NotifyDiscordGuilds
             foreach ($streamers as $streamer) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
 
-                $stream = $streamerCache[$streamer] ?? null;
+                $stream = $this->streamCache[$streamer] ?? null;
                 if ($stream === null) {
                     $stream = $this->twitchWrapper->getStream($streamer);
-                    $streamerCache[$streamer] = $stream;
+                    $this->streamCache[$streamer] = $stream;
                 }
 
                 if ($stream === null) {
                     $this->logger->debug("Notify: Stream {$streamer} is offline. Skipping.");
                     continue;
+                }
+
+                if (!empty($stream->gameId) && !empty($stream->gameName)) {
+                    $this->gameRepository->add($stream->gameId, $stream->gameName);
                 }
 
                 $this->notifyStream($guild, $stream);

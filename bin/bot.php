@@ -6,7 +6,9 @@ use Discord\WebSockets\Intents;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Bot;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
+use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
+use DiscordTwitchBot\Repository\NotifiedClipsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Monolog\Handler\StreamHandler;
@@ -130,6 +132,8 @@ $bot = new Bot(
     new GuildSettingsRepository(__DIR__ . '/../data/'),
     new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db'),
     new StreamerRepository(__DIR__ . '/../data/streamer.db'),
+    new GameRepository(__DIR__ . '/../data/games.db'),
+    new NotifiedClipsRepository(__DIR__ . '/../data/notified_clips.db')
 );
 
 Benchmarker::getInstance()->stop('Boot');
