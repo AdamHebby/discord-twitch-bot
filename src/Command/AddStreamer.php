@@ -52,7 +52,7 @@ class AddStreamer extends Command
             new CommandOption([
                 'name'        => 'custom_message',
                 'description' => 'A custom message to post when the streamer goes live. '
-                    . 'Use {name} and {game} for dynamic content. Leave blank to use the default message.',
+                    . 'Use {name} and {game} for dynamic content.',
                 'type'        => Option::STRING,
                 'required'    => false,
             ]),
@@ -65,7 +65,7 @@ class AddStreamer extends Command
 
         $options       = $interaction->data->options;
         $streamer      = strtolower($options['streamer']->value);
-        $channel       = $options['channel']->value;
+        $channelId     = $options['channel']->value;
         $customMessage = $options['custom_message']?->value;
         $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
@@ -73,9 +73,9 @@ class AddStreamer extends Command
             $customMessage = null;
         }
 
-        $channel = $interaction->guild->channels->get('id', $channel);
+        $channel = $interaction->guild->channels->get('id', $channelId);
         if ($channel === null) {
-            $this->interactionReply($interaction, "I can't see the channel {$channel}.");
+            $this->interactionReply($interaction, "I can't see the channel <#{$channelId}>.");
             return;
         }
 
