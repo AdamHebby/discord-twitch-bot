@@ -48,6 +48,6 @@ class GameRepository extends SqlLiteDatabaseRepository
             'game_id'  => $gameId,
         ]);
 
-        return $stmt->fetchColumn();
+        return $stmt->fetchColumn() ?: null;
     }
 }

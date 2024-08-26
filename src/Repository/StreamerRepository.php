@@ -120,7 +120,7 @@ class StreamerRepository extends SqlLiteDatabaseRepository
 
     public function getStreamerById(string $streamerId): ?Streamer
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM streamer WHERE `id` = :`id`');
+        $stmt = $this->pdo->prepare('SELECT * FROM streamer WHERE `id` = :id');
         $stmt->execute(['id' => $streamerId]);
 
         $data = $stmt->fetch();
