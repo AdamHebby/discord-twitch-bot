@@ -19,9 +19,6 @@ use DiscordTwitchBot\Command\ListStreamers;
 use DiscordTwitchBot\Command\RemoveStreamer;
 use DiscordTwitchBot\Command\UnwatchClips;
 use DiscordTwitchBot\Command\WatchClips;
-use DiscordTwitchBot\Model\GuildSettings;
-use DiscordTwitchBot\Model\Stream;
-use DiscordTwitchBot\Model\Streamer;
 use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedClipsRepository;
@@ -124,7 +121,6 @@ class Bot
             $this->guildSettingsRepository,
             $this->streamerRepository,
             new DiscordClipEmbedQuery($this->discord, $this->gameRepository),
-            $this->gameRepository,
             $this->notifiedClipsRepository
         );
 
@@ -148,18 +144,6 @@ class Bot
 
         $this->discord->getLoop()->addPeriodicTimer(15, function () {
             touch(__DIR__ . '/../lock');
-        });
-
-        $this->discord->getLoop()->addPeriodicTimer(60 * 15, function () {
-            $avgBenches = Benchmarker::getInstance()->avgAll();
-
-            if ($avgBenches !== []) {
-                foreach ($avgBenches as $key => $value) {
-                    $this->logger->info("AVG time: {$key}: {$value}ms", $avgBenches);
-                }
-            }
-
-            Benchmarker::getInstance()->reset();
         });
 
         $this->discord->run();

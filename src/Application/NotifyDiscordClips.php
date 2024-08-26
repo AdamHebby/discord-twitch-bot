@@ -9,10 +9,6 @@ use Discord\Parts\Guild\Guild;
 use DiscordTwitchBot\Application\Query\DiscordClipEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
-use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
-use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
-use DiscordTwitchBot\Model\Stream;
-use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\NotifiedClipsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
@@ -26,7 +22,6 @@ class NotifyDiscordClips
         private readonly GuildSettingsRepository $guildSettingsRepository,
         private readonly StreamerRepository $streamerRepository,
         private readonly DiscordClipEmbedQuery $discordClipEmbedQuery,
-        private readonly GameRepository $gameRepository,
         private readonly NotifiedClipsRepository $notifiedClipsRepository,
     ) {
     }

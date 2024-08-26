@@ -96,8 +96,16 @@ class NotifyDiscordLiveStreams
         }
 
         $discordChannel->sendMessage($message->message, false, $message->embed)->done(
-            function () use ($stream, $guild) {
-                $this->logger->info("Notify: Stream {$stream->id} notified in guild {$guild->name}");
+            function () use ($stream, $guild, $discordChannel) {
+                $this->logger->info(sprintf(
+                    "Notify: Stream %s notified in guild %s (%s) in channel %s (%s)",
+                    $stream->id,
+                    $guild->name,
+                    $guild->id,
+                    $discordChannel->name,
+                    $discordChannel->id
+                ));
+
                 $this->notifiedStreamsRepository->add($stream->userLogin, $stream->id, $guild->id);
             }
         );
