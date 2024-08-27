@@ -338,7 +338,6 @@ class NotifyDiscordLiveStreamsTest extends TestCase
 
     public function testExecuteStopsWhenStreamNotFound(): void
     {
-
         $logger = $this->createMock(LoggerInterface::class);
         $discord = $this->createMock(Discord::class);
         $twitchWrapper = $this->createMock(TwitchWrapper::class);
@@ -368,6 +367,72 @@ class NotifyDiscordLiveStreamsTest extends TestCase
             ]);
 
         $twitchWrapper->expects($this->exactly(3))
+            ->method('getStream')
+            ->willReturn(null);
+
+        $streamerRepository->expects($this->never())
+            ->method('getStreamerByLogin');
+
+        $notifiedStreamsRepository->expects($this->never())
+            ->method('isNotified')
+            ->willReturn(false);
+
+        $notifiedStreamsRepository->expects($this->never())
+            ->method('isNotifiedRestartedStream')
+            ->willReturn(false);
+
+        $notifiedStreamsRepository->expects($this->never())
+            ->method('add');
+
+        $discord->expects($this->never())
+            ->method('getChannel');
+
+        $notifyDiscordClips = new NotifyDiscordLiveStreams(
+            $logger,
+            $discord,
+            $twitchWrapper,
+            $guildSettingsRepository,
+            $notifiedStreamsRepository,
+            $streamerRepository,
+            $this->getEmbedQuery(),
+            $gameRepository
+        );
+
+        $notifyDiscordClips->execute();
+    }
+
+    public function testOnlyCallsTwitchApiOncePerStreamer(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $discord = $this->createMock(Discord::class);
+        $twitchWrapper = $this->createMock(TwitchWrapper::class);
+        $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
+        $streamerRepository = $this->createMock(StreamerRepository::class);
+        $notifiedStreamsRepository = $this->createMock(NotifiedStreamsRepository::class);
+        $gameRepository = $this->createMock(GameRepository::class);
+
+        $discord->expects($this->once())
+            ->method('__get')
+            ->with('guilds')
+            ->willReturn([
+                $this->mockGuild([['id', '1'], ['name', '1']]),
+                $this->mockGuild([['id', '2'], ['name', '2']]),
+            ]);
+
+        $guildSettings1 = new GuildSettings('1');
+        $guildSettings1->addStreamer('streamer-1', null, 'channel-1');
+
+        $guildSettings2 = new GuildSettings('2');
+        $guildSettings2->addStreamer('streamer-1', null, 'channel-2');
+
+        $guildSettingsRepository->expects($this->any())
+            ->method('load')
+            ->willReturnMap([
+                ['1', $guildSettings1],
+                ['2', $guildSettings2],
+            ]);
+
+        $twitchWrapper->expects($this->exactly(1)) # Only called once per streamer
             ->method('getStream')
             ->willReturn(null);
 
