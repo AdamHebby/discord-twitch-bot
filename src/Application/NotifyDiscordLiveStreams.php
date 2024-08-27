@@ -15,8 +15,11 @@ use Psr\Log\LoggerInterface;
 
 class NotifyDiscordLiveStreams
 {
-    // TODO: This should be a cache service
+    /** @var array<string,Stream> $streamCache */
     private array $streamCache = [];
+
+    /** @var array<string,bool> $offlineCache */
+    private array $offlineCache = [];
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -44,11 +47,7 @@ class NotifyDiscordLiveStreams
             foreach ($streamers as $streamer) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
 
-                $stream = $this->streamCache[$streamer] ?? null;
-                if ($stream === null) {
-                    $stream = $this->twitchWrapper->getStream($streamer);
-                    $this->streamCache[$streamer] = $stream;
-                }
+                $stream = $this->getStream($streamer);
 
                 if ($stream === null) {
                     $this->logger->debug("Notify: Stream {$streamer} is offline. Skipping.");
@@ -109,5 +108,23 @@ class NotifyDiscordLiveStreams
                 $this->notifiedStreamsRepository->add($stream->userLogin, $stream->id, $guild->id);
             }
         );
+    }
+
+    private function getStream(string $streamer): ?Stream
+    {
+        if (isset($this->offlineCache[$streamer])) {
+            return null;
+        }
+
+        if (!isset($this->streamCache[$streamer])) {
+            $stream = $this->twitchWrapper->getStream($streamer);
+            $this->streamCache[$streamer] = $stream;
+
+            if ($stream === null) {
+                $this->offlineCache[$streamer] = true;
+            }
+        }
+
+        return $this->streamCache[$streamer];
     }
 }
