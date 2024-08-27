@@ -27,15 +27,12 @@ class DiscordLiveEmbedQuery
     ): EmbeddedMessage {
         Benchmarker::getInstance()->start(__CLASS__);
 
-        $streamUrl   = "https://www.twitch.tv/{$stream->userLogin}?referrer=discord";
-        $previewLink = $stream->getThumbnailUrl();
-        $previewLink = str_replace('{width}', '1920', $previewLink);
-        $previewLink = str_replace('{height}', '1080', $previewLink);
+        $streamUrl = "https://www.twitch.tv/{$stream->userLogin}?referrer=discord";
 
         $embed = new Embed($this->discord, [
             'title'  => $stream->title,
             'url'    => $streamUrl,
-            'image'  => ['url' => $previewLink],
+            'image'  => ['url' => $stream->getThumbnailUrl()],
             'author' => [
                 'name'     => $stream->userName . " is now live on Twitch!",
                 'url'      => $streamUrl,
