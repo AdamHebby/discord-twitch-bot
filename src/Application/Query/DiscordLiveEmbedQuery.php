@@ -36,7 +36,7 @@ class DiscordLiveEmbedQuery
             'author' => [
                 'name'     => $stream->userName . " is now live on Twitch!",
                 'url'      => $streamUrl,
-                'icon_url' => $streamer->profileImageUrl,
+                'icon_url' => $streamer->profileImageUrl . '?rand=' . time(),
             ],
             'color'  => hexdec('6a44bc'),
             'timestamp' => $stream->startedAt->format('c'),
