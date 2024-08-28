@@ -42,7 +42,11 @@ class Stream
 
     public function getThumbnailUrl(int $width = 1920, int $height = 1080): string
     {
-        return str_replace(['{width}', '{height}'], [$width, $height], $this->thumbnailUrl);
+        return str_replace(
+            ['{width}', '{height}'],
+            [$width, $height],
+            $this->thumbnailUrl
+        ) . "?v=" . time();
     }
 
     /**

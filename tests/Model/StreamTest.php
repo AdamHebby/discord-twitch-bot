@@ -29,11 +29,11 @@ class StreamTest extends TestCase
         $stream = Stream::fromJsonArray($data);
 
         $this->assertSame("123", $stream->id);
-        $this->assertSame(
+        $this->assertStringStartsWith(
             "https://example.com/1920x1080.jpg",
             $stream->getThumbnailUrl()
         );
-        $this->assertSame(
+        $this->assertStringStartsWith(
             "https://example.com/123x456.jpg",
             $stream->getThumbnailUrl(123, 456)
         );
