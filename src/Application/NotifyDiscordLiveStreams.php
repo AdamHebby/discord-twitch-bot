@@ -62,6 +62,9 @@ class NotifyDiscordLiveStreams
             }
         }
 
+        $this->streamCache = [];
+        $this->offlineCache = [];
+
         Benchmarker::getInstance()->stop(__CLASS__);
     }
 
