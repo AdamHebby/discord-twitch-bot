@@ -8,12 +8,14 @@ use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\EmbeddedMessage;
 use DiscordTwitchBot\Model\TwitchClip;
 use DiscordTwitchBot\Repository\GameRepository;
+use DiscordTwitchBot\Repository\StreamerRepository;
 
 class DiscordClipEmbedQuery
 {
     public function __construct(
         private readonly Discord $discord,
         private readonly GameRepository $gameRepository,
+        private readonly StreamerRepository $streamerRepository,
     ) {
     }
 
@@ -23,27 +25,24 @@ class DiscordClipEmbedQuery
         Benchmarker::getInstance()->start(__CLASS__);
 
         $gameName  = $this->gameRepository->get($clip->gameId);
-        $gameField = $gameName ? ['name' => 'Game', 'value' => $gameName] : null;
+        $gameField = $gameName ? ['name' => 'Game', 'value' => $gameName, 'inline' => true] : null;
+        $streamer  = $this->streamerRepository->getStreamerById($clip->broadcasterId);
 
         $embed = new Embed($this->discord, [
-            'title'  => $clip->title,
+            'title'  => $clip->title . ' - Click to Watch on Twitch',
             'url'    => $clip->getUrl(),
             'image'  => ['url' => $clip->thumbnailUrl],
             'author' => [
-                'name' => "New clip for {$clip->broadcasterName}. Clipped by {$clip->creatorName}",
-                'url'  => $clip->getUrl(),
+                'name'     => $clip->broadcasterName,
+                'url'      => $streamer->getUrl(),
+                'icon_url' => $streamer->profileImageUrl . '?rand=' . time(),
             ],
             'color'  => hexdec('6a44bc'),
             'timestamp' => $clip->createdAt->format('c'),
             'fields' => array_filter([
                 [
-                    'name'  => 'Views',
-                    'value' => $clip->viewCount,
-                    'inline' => true,
-                ],
-                [
-                    'name'  => 'Duration',
-                    'value' => $clip->duration . 's',
+                    'name'  => 'Clipped By',
+                    'value' => $clip->creatorName,
                     'inline' => true,
                 ],
                 $gameField,

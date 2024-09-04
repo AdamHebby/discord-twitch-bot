@@ -65,4 +65,9 @@ class Streamer
             'created_at' => $this->createdAt->format(DateTimeImmutable::RFC3339),
         ];
     }
+
+    public function getUrl(): string
+    {
+        return "https://www.twitch.tv/{$this->login}";
+    }
 }

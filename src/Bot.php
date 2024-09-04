@@ -120,7 +120,7 @@ class Bot
             $this->twitchWrapper,
             $this->guildSettingsRepository,
             $this->streamerRepository,
-            new DiscordClipEmbedQuery($this->discord, $this->gameRepository),
+            new DiscordClipEmbedQuery($this->discord, $this->gameRepository, $this->streamerRepository),
             $this->notifiedClipsRepository
         );
 
