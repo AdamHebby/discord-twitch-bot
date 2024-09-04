@@ -79,6 +79,11 @@ class TwitchWrapper
         return $stream;
     }
 
+    /**
+     * Get clips for a streamer between two dates
+     *
+     * @return TwitchClip[]
+     */
     public function getClips(string $streamerId, DateTimeImmutable $started, DateTimeImmutable $ended): array
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
@@ -104,6 +109,43 @@ class TwitchWrapper
         }
 
         return array_map(static fn(array $clip) => TwitchClip::fromJsonArray($clip), $contents['data']);
+    }
+
+    /**
+     * Get the top 500 games on Twitch
+     *
+     * @return array<string,string> id => name map
+     */
+    public function getTopGames(int $count = 500): array
+    {
+        Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
+
+        $this->authorizeTwitchApi();
+
+        $first = 100;
+        $after = null;
+        $games = [];
+
+        for ($i = 0; $i < $count / $first; $i++) {
+            $response = $this->twitchApi->getGamesApi()->getTopGames($this->bearerToken, $first, null, $after);
+            $contents = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($contents['data'])) {
+                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                return array_column($games, 'name', 'id');
+            }
+
+            $games = array_merge($contents['data'], $games);
+
+            if ($contents['pagination']['cursor'] === null) {
+                break;
+            }
+
+            $after = $contents['pagination']['cursor'];
+        }
+
+        Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+        return array_column($games, 'name', 'id');
     }
 
     private function authorizeTwitchApi(): void
