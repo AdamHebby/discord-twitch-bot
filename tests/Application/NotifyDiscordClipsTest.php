@@ -78,7 +78,7 @@ class NotifyDiscordClipsTest extends TestCase
             $channel->expects($this->once())
                 ->method('sendMessage')
                 ->with($this->anything(), false, $this->callback(function (Embed $embed) {
-                    return $embed->title === 'Clip Title';
+                    return $embed->title === 'Clip Title - Click to Watch on Twitch';
                 }))
                 ->willReturn(resolve());
         }
@@ -274,10 +274,16 @@ class NotifyDiscordClipsTest extends TestCase
 
     private function getEmbedQuery(): DiscordClipEmbedQuery
     {
-        $discord    = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient']);
-        $httpClient = $this->createMock(\Discord\Http\Http::class);
-        $factory    = new \Discord\Factory\Factory($discord, $httpClient);
-        $gameRepo   = $this->createMock(GameRepository::class);
+        $discord      = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient']);
+        $httpClient   = $this->createMock(\Discord\Http\Http::class);
+        $factory      = new \Discord\Factory\Factory($discord, $httpClient);
+        $gameRepo     = $this->createMock(GameRepository::class);
+        $streamerRepo = $this->createMock(StreamerRepository::class);
+
+        $streamerRepo->expects($this->any())
+            ->method('getStreamerById')
+            ->with('123')
+            ->willReturn($this->getStreamer('123'));
 
         $gameRepo->expects($this->any())
             ->method('get')
@@ -287,7 +293,7 @@ class NotifyDiscordClipsTest extends TestCase
         $discord->method('getFactory')->willReturn($factory);
         $discord->method('getHttpClient')->willReturn($httpClient);
 
-        $query = new DiscordClipEmbedQuery($discord, $gameRepo);
+        $query = new DiscordClipEmbedQuery($discord, $gameRepo, $streamerRepo);
 
         return $query;
     }
