@@ -53,6 +53,7 @@ class GuildSettings
     public function removeStreamer(string $streamer): void
     {
         unset($this->streamers[$streamer]);
+        unset($this->channels[$streamer]);
     }
 
     /**

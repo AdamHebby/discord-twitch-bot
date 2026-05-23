@@ -51,8 +51,8 @@ class StreamerRepository extends SqlLiteDatabaseRepository
                 :offline_image_url,
                 :view_count,
                 :created_at
-            ) ON CONFLICT(`login`) DO UPDATE SET
-                `id` = :id,
+            ) ON CONFLICT(`id`) DO UPDATE SET
+                `login` = :login,
                 `display_name` = :display_name,
                 `type` = :type,
                 `broadcaster_type` = :broadcaster_type,

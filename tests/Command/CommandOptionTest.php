@@ -2,12 +2,16 @@
 
 namespace DiscordTwitchBot\Test\Command;
 
+use Discord\Discord;
 use Discord\Parts\Interactions\Command\Option;
 use PHPUnit\Framework\TestCase;
 use DiscordTwitchBot\Command\CommandOption;
+use DiscordTwitchBot\Test\DiscordMocker;
 
 class CommandOptionTest extends TestCase
 {
+    use DiscordMocker;
+
     public function testCommandOption(): void
     {
         $data = [
@@ -18,7 +22,7 @@ class CommandOptionTest extends TestCase
         ];
 
         $commandOption = new CommandOption($data);
-        $discord       = $this->createMock(\Discord\Discord::class);
+        $discord       = $this->mockDiscord();
         $option        = $commandOption->toOption($discord);
         $optionData    = $option->getPublicAttributes();
 

@@ -4,6 +4,7 @@ namespace DiscordTwitchBot\Application;
 
 use Discord\Discord;
 use Discord\Parts\Guild\Guild;
+use DiscordTwitchBot\Application\Query\CheckStreamerExistsQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedStreamsRepository;
@@ -30,6 +31,7 @@ class NotifyDiscordLiveStreams
         private readonly StreamerRepository $streamerRepository,
         private readonly DiscordLiveEmbedQuery $discordLiveEmbedQuery,
         private readonly GameRepository $gameRepository,
+        private readonly CheckStreamerExistsQuery $checkStreamerExistsQuery,
     ) {
     }
 
@@ -46,6 +48,11 @@ class NotifyDiscordLiveStreams
 
             foreach ($streamers as $streamer) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
+
+                if (!$this->checkStreamerExistsQuery->check($guildSettings, $streamer)) {
+                    $this->logger->debug("Notify: Streamer {$streamer} does not exist. Skipping.");
+                    continue;
+                }
 
                 $stream = $this->getStream($streamer);
 
@@ -97,7 +104,7 @@ class NotifyDiscordLiveStreams
             return;
         }
 
-        $discordChannel->sendMessage($message->message, false, $message->embed)->done(
+        $discordChannel->sendMessage($message->message, false, $message->embed)->then(
             function () use ($stream, $guild, $discordChannel) {
                 $this->logger->info(sprintf(
                     "Notify: Stream %s notified in guild %s (%s) in channel %s (%s)",

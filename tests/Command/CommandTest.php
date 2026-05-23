@@ -15,11 +15,14 @@ use DiscordTwitchBot\Command\UnwatchClips;
 use DiscordTwitchBot\Command\WatchClips;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
-use Monolog\Test\TestCase;
+use DiscordTwitchBot\Test\DiscordMocker;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 class CommandTest extends TestCase
 {
+    use DiscordMocker;
+
     public function testBasicCommands(): void
     {
         $commandHandler = new CommandHandler();
@@ -53,7 +56,7 @@ class CommandTest extends TestCase
 
         $commandHandler->addCommands($commands);
 
-        $discord = $this->createMock(Discord::class);
+        $discord = $this->mockDiscord();
         foreach ($commands as $command) {
             $this->assertNotEmpty($command->getName());
             $this->assertNotEmpty($command->getDescription());

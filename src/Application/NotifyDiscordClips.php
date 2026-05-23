@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Discord\Discord;
 use Discord\Parts\Guild\Guild;
+use DiscordTwitchBot\Application\Query\CheckStreamerExistsQuery;
 use DiscordTwitchBot\Application\Query\DiscordClipEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
@@ -23,6 +24,7 @@ class NotifyDiscordClips
         private readonly StreamerRepository $streamerRepository,
         private readonly DiscordClipEmbedQuery $discordClipEmbedQuery,
         private readonly NotifiedClipsRepository $notifiedClipsRepository,
+        private readonly CheckStreamerExistsQuery $checkStreamerExistsQuery,
     ) {
     }
 
@@ -40,7 +42,24 @@ class NotifyDiscordClips
 
             foreach ($streamers as $streamer => $clipChannel) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
+
+                if (!$this->checkStreamerExistsQuery->check($guildSettings, $streamer)) {
+                    $this->logger->warning("Notify: Streamer {$streamer} does not exist. Skipping.");
+                    continue;
+                }
+
                 $streamerObj = $this->streamerRepository->getStreamerByLogin($streamer);
+
+                if ($streamerObj === null) {
+                    $streamerObj = $this->twitchWrapper->getStreamer($streamer);
+
+                    if ($streamerObj === null) {
+
+                        continue;
+                    }
+
+                    $this->streamerRepository->add($streamerObj);
+                }
 
                 $now = new DateTimeImmutable('now', $utc);
 
@@ -66,7 +85,7 @@ class NotifyDiscordClips
                         continue;
                     }
 
-                    $discordChannel->sendMessage($message->message, false, $message->embed)->done(
+                    $discordChannel->sendMessage($message->message, false, $message->embed)->then(
                         function () use ($clip, $guild) {
                             $this->logger->info("Notify: Clip {$clip->id} notified in guild {$guild->name}");
                             $this->notifiedClipsRepository->add($clip->id, $guild->id);

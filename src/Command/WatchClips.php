@@ -4,6 +4,7 @@ namespace DiscordTwitchBot\Command;
 
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
+use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Model\Streamer;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
@@ -53,6 +54,8 @@ class WatchClips extends Command
 
     public function execute(Interaction $interaction): void
     {
+        Benchmarker::getInstance()->start(__CLASS__);
+
         $options       = $interaction->data->options;
         $streamer      = strtolower($options['streamer']->value);
         $channelId     = $options['channel']->value;
@@ -64,6 +67,7 @@ class WatchClips extends Command
 
         if ($streamerObj === null) {
             $this->interactionReply($interaction, "Streamer `$streamer` does not exist.");
+            Benchmarker::getInstance()->killActive(__CLASS__);
             return;
         }
 
@@ -88,5 +92,15 @@ class WatchClips extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $this->interactionReply($interaction, "Clips for streamer `$streamer` will now be posted in <#$channelId>.");
+        $this->logger->info(sprintf(
+            'Added clips channel "%s" to guild "%s" (%s) by user "%s" (%s)',
+            $streamer,
+            $interaction->guild->name,
+            $interaction->guild_id,
+            $interaction->member->username,
+            $interaction->member->id
+        ));
+
+        Benchmarker::getInstance()->stop(__CLASS__);
     }
 }

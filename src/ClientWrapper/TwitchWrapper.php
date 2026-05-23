@@ -23,12 +23,21 @@ class TwitchWrapper
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
         $this->authorizeTwitchApi();
 
-        $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->bearerToken, $streamer);
-        $contents = json_decode($response->getBody()->getContents());
+        try {
+            $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->bearerToken, $streamer);
+            $contents = json_decode($response->getBody()->getContents());
 
-        $exists = $response->getStatusCode() === 200 &&
-            !empty($contents->data) &&
-            $contents->data[0]->login === $streamer;
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode !== 200) {
+                throw new \Exception("Twitch API returned status code {$statusCode}");
+            }
+
+            $exists = !empty($contents->data) && $contents->data[0]->login === $streamer;
+        } catch (\Throwable $th) {
+            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            throw $th;
+        }
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
 
@@ -108,6 +117,8 @@ class TwitchWrapper
             return [];
         }
 
+        Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+
         return array_map(static fn(array $clip) => TwitchClip::fromJsonArray($clip), $contents['data']);
     }
 
@@ -148,12 +159,44 @@ class TwitchWrapper
         return array_column($games, 'name', 'id');
     }
 
+    public function getTopGamesData(int $count = 500): array
+    {
+        Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
+
+        $this->authorizeTwitchApi();
+
+        $first = 100;
+        $after = null;
+        $games = [];
+
+        for ($i = 0; $i < $count / $first; $i++) {
+            $response = $this->twitchApi->getGamesApi()->getTopGames($this->bearerToken, $first, null, $after);
+            $contents = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($contents['data'])) {
+                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                return $games;
+            }
+
+            $games = array_merge($contents['data'], $games);
+
+            if ($contents['pagination']['cursor'] === null) {
+                break;
+            }
+
+            $after = $contents['pagination']['cursor'];
+        }
+
+        Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+        return $games;
+    }
+
     private function authorizeTwitchApi(): void
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
 
         if ($this->bearerToken !== null) {
-            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            Benchmarker::getInstance()->killActive(__CLASS__ . '::' . __FUNCTION__);
             return;
         }
 

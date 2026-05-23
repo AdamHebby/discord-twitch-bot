@@ -2,6 +2,7 @@
 
 namespace DiscordTwitchBot\Test;
 
+use Discord\Discord;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction;
@@ -58,5 +59,13 @@ trait DiscordMocker
             ]);
 
         return $channel;
+    }
+
+    public function mockDiscord(): MockObject&Discord
+    {
+        $discord = $this->createMock(Discord::class);
+        $discord->method('getCollectionClass')->willReturn(\Discord\Helpers\Collection::class);
+
+        return $discord;
     }
 }

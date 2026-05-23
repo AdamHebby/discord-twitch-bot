@@ -47,6 +47,7 @@ class RemoveStreamer extends Command
 
         if ($guildSettings->hasStreamer($streamer) === false) {
             $this->interactionReply($interaction, "{$streamer} is not being watched!");
+            Benchmarker::getInstance()->killActive(__CLASS__);
             return;
         }
 

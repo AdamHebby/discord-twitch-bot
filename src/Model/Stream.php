@@ -66,7 +66,7 @@ class Stream
             $data["game_name"],
             $data["type"],
             $data["title"],
-            $data["tags"],
+            $data["tags"] ?? [],
             $data["viewer_count"],
             DateTimeImmutable::createFromFormat(
                 DateTimeImmutable::RFC3339,
@@ -75,7 +75,7 @@ class Stream
             ) ?: $defaultNow,
             $data["language"],
             $data["thumbnail_url"],
-            $data["tag_ids"],
+            $data["tag_ids"] ?? [],
             $data["is_mature"],
         );
     }
@@ -91,12 +91,12 @@ class Stream
             'game_name' => $this->gameName,
             'type' => $this->type,
             'title' => $this->title,
-            'tags' => $this->tags,
+            'tags' => $this->tags ?? [],
             'viewer_count' => $this->viewerCount,
             'started_at' => $this->startedAt->format(DateTimeImmutable::RFC3339),
             'language' => $this->language,
             'thumbnail_url' => $this->thumbnailUrl,
-            'tag_ids' => $this->tagIds,
+            'tag_ids' => $this->tagIds ?? [],
             'is_mature' => $this->isMature,
         ];
     }

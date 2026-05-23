@@ -4,6 +4,7 @@ namespace DiscordTwitchBot\Command;
 
 use Discord\Discord;
 use Discord\Parts\Interactions\Command\Option;
+use Discord\Parts\Interactions\Command\Choice;
 
 class CommandOption
 {

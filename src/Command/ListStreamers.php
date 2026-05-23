@@ -2,6 +2,7 @@
 
 namespace DiscordTwitchBot\Command;
 
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
@@ -26,9 +27,19 @@ class ListStreamers extends Command
         return 'List all streamers being watched.';
     }
 
+    /**
+     * @return CommandOption[]
+     */
     public function getOptions(): array
     {
-        return [];
+        return [
+            new CommandOption([
+                'name'        => 'page',
+                'description' => 'If there are too many streamers for a message, you can use this to paginate through them.',
+                'type'        => Option::INTEGER,
+                'required'    => false,
+            ]),
+        ];
     }
 
     public function execute(Interaction $interaction): void
@@ -40,23 +51,40 @@ class ListStreamers extends Command
 
         if (empty($streamers)) {
             $this->interactionReply($interaction, 'No streamers are being watched!');
+            Benchmarker::getInstance()->killActive(__CLASS__);
             return;
         }
 
+        $pageNumber = ($interaction->data->options['page']->value ?? 1) - 1;
+        $messages = [];
+        $pageFormat = "[Page %d/%d] Use the page option to see more streamers.";
         $message = '**Streamers being watched:**' . PHP_EOL;
         foreach ($streamers as $streamer) {
             $streamerChannel = $settings->getStreamerChannel($streamer);
             $streamerMessage = $settings->getStreamerMessage($streamer);
 
-            $message .= sprintf(
+            $addOnMessage = sprintf(
                 '- `%s` in <#%s> with message: `%s`' . PHP_EOL,
                 $streamer,
                 $streamerChannel,
                 $streamerMessage ?? DiscordLiveEmbedQuery::DEFAULT_MSG
             );
+
+            if (strlen($message . $addOnMessage . $pageFormat) > 2000) {
+                $messages[] = $message;
+                $message = '**Streamers being watched:**' . PHP_EOL . $addOnMessage;
+            } else {
+                $message .= $addOnMessage;
+            }
         }
 
-        $this->interactionReply($interaction, $message);
+        $messages[] = $message;
+
+        foreach ($messages as $num => $message) {
+            $messages[$num] .= sprintf($pageFormat, $num + 1, count($messages));
+        }
+
+        $this->interactionReply($interaction, $messages[$pageNumber] ?? $messages[count($messages) - 1]);
 
         $this->logger->info(sprintf(
             'Streamers List shown to user %s (%s) in guild "%s" (%s)',

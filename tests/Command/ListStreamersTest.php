@@ -11,6 +11,8 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\NullLogger;
 
+use function React\Promise\resolve;
+
 class ListStreamersTest extends TestCase
 {
     use DiscordMocker;
@@ -41,8 +43,10 @@ class ListStreamersTest extends TestCase
             ])],
         ]);
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $message = json_decode(json_encode($message), true)['content'];
                 return str_contains($message, 'teststreamer') &&
@@ -83,8 +87,10 @@ class ListStreamersTest extends TestCase
             ])],
         ]);
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $message = json_decode(json_encode($message), true)['content'];
                 return $message === 'No streamers are being watched!';

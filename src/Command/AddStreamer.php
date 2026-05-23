@@ -101,7 +101,14 @@ class AddStreamer extends Command
             return;
         }
 
-        $this->streamerRepository->add($streamerObject);
+        try {
+            $this->streamerRepository->add($streamerObject);
+        } catch (\Throwable $th) {
+            $this->logger->error("Failed to add streamer {$streamer}: " . $th->getMessage());
+            // $this->interactionReply($interaction, "Failed to add streamer {$streamer}. Please try again later.");
+            return;
+        }
+
 
         $guildSettings->addStreamer($streamer, $customMessage, $channel->id);
         $this->guildSettingsRepository->save($guildSettings);

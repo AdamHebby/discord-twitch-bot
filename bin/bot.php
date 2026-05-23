@@ -23,6 +23,11 @@ if (file_exists(__DIR__ . '/../lock') && filemtime(__DIR__ . '/../lock') > time(
     exit(1);
 }
 
+// Kill all other instances of the bot, but not this one
+$pid = getmypid();
+exec("ps aux | grep bot.php | grep -v $pid | grep -v '/bin/sh' | grep -v grep | awk '{print $2}' | xargs kill -9 2>&1");
+sleep(3);
+
 touch(__DIR__ . '/../lock');
 
 if (!file_exists(__DIR__ . '/../.env')) {

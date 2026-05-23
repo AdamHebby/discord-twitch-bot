@@ -4,6 +4,7 @@ namespace DiscordTwitchBot\Command;
 
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
+use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
 
@@ -42,6 +43,8 @@ class UnwatchClips extends Command
 
     public function execute(Interaction $interaction): void
     {
+        Benchmarker::getInstance()->start(__CLASS__);
+
         $options       = $interaction->data->options;
         $streamer      = strtolower($options['streamer']->value);
         $guildId       = $interaction->guild_id;
@@ -49,6 +52,7 @@ class UnwatchClips extends Command
 
         if ($guildSettings->getClipChannel($streamer) === null) {
             $this->interactionReply($interaction, "Clips for streamer $streamer are not being posted.");
+            Benchmarker::getInstance()->killActive(__CLASS__);
             return;
         }
 
@@ -57,5 +61,16 @@ class UnwatchClips extends Command
         $this->guildSettingsRepository->save($guildSettings);
 
         $this->interactionReply($interaction, "Clips for streamer $streamer will no longer be posted.");
+
+        $this->logger->info(sprintf(
+            'Removed clip channel for streamer %s from guild "%s" (%s) by user "%s" (%s)',
+            $streamer,
+            $interaction->guild->name,
+            $interaction->guild_id,
+            $interaction->member->username,
+            $interaction->member->id,
+        ));
+
+        Benchmarker::getInstance()->stop(__CLASS__);
     }
 }

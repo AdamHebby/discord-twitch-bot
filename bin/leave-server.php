@@ -1,0 +1,126 @@
+<?php
+
+use Discord\Discord;
+use Discord\WebSockets\Event;
+use Discord\WebSockets\Intents;
+use DiscordTwitchBot\Application\Benchmarker;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Psr\Log\LogLevel;
+use Symfony\Component\Dotenv\Dotenv;
+
+if (!file_exists(__DIR__ . '/../.env')) {
+    echo "Please create a .env file", PHP_EOL;
+    exit(1);
+}
+
+if (!extension_loaded('sqlite3')) {
+    echo "Please install sqlite3 extension", PHP_EOL;
+    exit(1);
+}
+
+if (!file_exists(__DIR__ . '/../data')) {
+    mkdir(__DIR__ . '/../data');
+}
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+Benchmarker::getInstance()->start('Boot');
+
+$envPath = __DIR__ . '/../.env.dev';
+$logFilePath = 'php://stdout';
+$logLevel = LogLevel::DEBUG;
+
+(new Dotenv())->load($envPath);
+
+$discordLogger = new Logger('Discord');
+$discordLogger->pushHandler(new StreamHandler($logFilePath, LogLevel::WARNING));
+
+$botLogger = new Logger('TwitchBotConsole');
+$botLogger->pushHandler(new StreamHandler($logFilePath, $logLevel));
+
+$discord = new Discord([
+    'logger' => $discordLogger,
+    'token' => $_ENV['DISCORD_BOT_TOKEN'],
+    'intents' => Intents::getDefaultIntents() | Intents::MESSAGE_CONTENT,
+    'storeMessages' => false,
+    'disabledEvents' => [
+        Event::PRESENCE_UPDATE,
+        Event::TYPING_START,
+        Event::VOICE_STATE_UPDATE,
+        Event::VOICE_SERVER_UPDATE,
+        // Event::INTERACTION_CREATE,
+        Event::USER_UPDATE,
+        // Event::GUILD_CREATE,
+        // Event::GUILD_DELETE,
+        // Event::GUILD_UPDATE,
+        // Event::GUILD_INTEGRATIONS_UPDATE,
+        // Event::INTEGRATION_CREATE,
+        // Event::INTEGRATION_UPDATE,
+        // Event::INTEGRATION_DELETE,
+        Event::WEBHOOKS_UPDATE,
+        // Event::APPLICATION_COMMAND_PERMISSIONS_UPDATE,
+        Event::INVITE_CREATE,
+        Event::INVITE_DELETE,
+        // Event::CHANNEL_CREATE,
+        // Event::CHANNEL_UPDATE,
+        // Event::CHANNEL_DELETE,
+        Event::CHANNEL_PINS_UPDATE,
+        // Event::GUILD_BAN_ADD,
+        // Event::GUILD_BAN_REMOVE,
+        Event::GUILD_EMOJIS_UPDATE,
+        Event::GUILD_STICKERS_UPDATE,
+        // Event::MESSAGE_CREATE,
+        Event::MESSAGE_DELETE,
+        Event::MESSAGE_DELETE_BULK,
+        Event::MESSAGE_UPDATE,
+        Event::MESSAGE_REACTION_ADD,
+        Event::MESSAGE_REACTION_REMOVE,
+        Event::MESSAGE_REACTION_REMOVE_ALL,
+        Event::MESSAGE_REACTION_REMOVE_EMOJI,
+        // Event::GUILD_MEMBER_ADD,
+        // Event::GUILD_MEMBER_REMOVE,
+        // Event::GUILD_MEMBER_UPDATE,
+        // Event::GUILD_ROLE_CREATE,
+        // Event::GUILD_ROLE_DELETE,
+        // Event::GUILD_ROLE_UPDATE,
+        Event::GUILD_SCHEDULED_EVENT_CREATE,
+        Event::GUILD_SCHEDULED_EVENT_UPDATE,
+        Event::GUILD_SCHEDULED_EVENT_DELETE,
+        Event::GUILD_SCHEDULED_EVENT_USER_ADD,
+        Event::GUILD_SCHEDULED_EVENT_USER_REMOVE,
+        Event::THREAD_CREATE,
+        Event::THREAD_UPDATE,
+        Event::THREAD_DELETE,
+        Event::THREAD_LIST_SYNC,
+        Event::THREAD_MEMBER_UPDATE,
+        Event::THREAD_MEMBERS_UPDATE,
+        Event::STAGE_INSTANCE_CREATE,
+        Event::STAGE_INSTANCE_UPDATE,
+        Event::STAGE_INSTANCE_DELETE,
+        Event::AUTO_MODERATION_RULE_CREATE,
+        Event::AUTO_MODERATION_RULE_UPDATE,
+        Event::AUTO_MODERATION_RULE_DELETE,
+        Event::AUTO_MODERATION_ACTION_EXECUTION,
+    ],
+]);
+
+$discord->on('ready', function (Discord $discord) {
+    echo "Bot is ready!\n";
+
+    foreach ($discord->guilds->getIterator() as $key => $value) {
+        echo "Guild ID: $key\n";
+        echo "Guild Name: {$value->name} \n";
+        echo "Guild Member Count: {$value->member_count} \n";
+        echo "------------------------------------------------\n\n";
+    }
+
+    $server = readline("Enter the server ID to leave: ");
+    $server = trim($server);
+
+    $discord->guilds->get('id', $server)->leave()->then(function () {
+        echo "Left the server successfully.\n";
+    })->catch(function (\Throwable $e) {
+        echo "Failed to leave the server: {$e->getMessage()}\n";
+    });
+});

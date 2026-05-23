@@ -13,6 +13,8 @@ use DiscordTwitchBot\Repository\StreamerRepository;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\NullLogger;
 
+use function React\Promise\resolve;
+
 class HelpTest extends TestCase
 {
     use DiscordMocker;
@@ -43,8 +45,10 @@ class HelpTest extends TestCase
             ])],
         ]);
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return str_contains($data['content'], '`add <streamer> <channel> [custom message]`');

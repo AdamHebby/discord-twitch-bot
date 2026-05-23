@@ -14,7 +14,8 @@ class DiscordLiveEmbedQueryTest extends TestCase
 {
     public function testExecuteReturnsCorrectEmbed(): void
     {
-        $discord    = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient']);
+        $discord    = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient', 'getCollectionClass']);
+        $discord->method('getCollectionClass')->willReturn(\Discord\Helpers\Collection::class);
         $httpClient = $this->createMock(\Discord\Http\Http::class);
         $factory    = new \Discord\Factory\Factory($discord, $httpClient);
 

@@ -6,6 +6,7 @@ use Discord\Discord;
 use Discord\Parts\Embed\Embed;
 use PHPUnit\Framework\TestCase;
 use DiscordTwitchBot\Application\NotifyDiscordClips;
+use DiscordTwitchBot\Application\Query\CheckStreamerExistsQuery;
 use DiscordTwitchBot\Application\Query\DiscordClipEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Model\GuildSettings;
@@ -15,6 +16,7 @@ use DiscordTwitchBot\Repository\GameRepository;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\NotifiedClipsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
+use DiscordTwitchBot\Test\DebugLogger;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\LoggerInterface;
 
@@ -26,8 +28,8 @@ class NotifyDiscordClipsTest extends TestCase
 
     public function testExecuteHappyPath(): void
     {
-        $logger = $this->createMock(LoggerInterface::class);
-        $discord = $this->createMock(Discord::class);
+        $logger = new DebugLogger();
+        $discord = $this->mockDiscord();
         $twitchWrapper = $this->createMock(TwitchWrapper::class);
         $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
         $streamerRepository = $this->createMock(StreamerRepository::class);
@@ -80,7 +82,7 @@ class NotifyDiscordClipsTest extends TestCase
                 ->with($this->anything(), false, $this->callback(function (Embed $embed) {
                     return $embed->title === 'Clip Title - Click to Watch on Twitch';
                 }))
-                ->willReturn(resolve());
+                ->willReturn(resolve(true));
         }
 
         $notifiedClipsRepository->expects($this->exactly(3))
@@ -94,6 +96,8 @@ class NotifyDiscordClipsTest extends TestCase
                 ['channel-3', $channel3],
             ]);
 
+        $checkStreamerExistsQuery = $this->getStreamerExistsQuery(['streamer-1', 'streamer-2', 'streamer-3']);
+
         $notifyDiscordClips = new NotifyDiscordClips(
             $logger,
             $discord,
@@ -101,7 +105,8 @@ class NotifyDiscordClipsTest extends TestCase
             $guildSettingsRepository,
             $streamerRepository,
             $this->getEmbedQuery(),
-            $notifiedClipsRepository
+            $notifiedClipsRepository,
+            $checkStreamerExistsQuery
         );
 
         $notifyDiscordClips->execute();
@@ -109,8 +114,8 @@ class NotifyDiscordClipsTest extends TestCase
 
     public function testExecuteChannelNotFound(): void
     {
-        $logger = $this->createMock(LoggerInterface::class);
-        $discord = $this->createMock(Discord::class);
+        $logger = new DebugLogger();
+        $discord = $this->mockDiscord();
         $twitchWrapper = $this->createMock(TwitchWrapper::class);
         $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
         $streamerRepository = $this->createMock(StreamerRepository::class);
@@ -154,6 +159,8 @@ class NotifyDiscordClipsTest extends TestCase
                 ['channel-1', null],
             ]);
 
+        $checkStreamerExistsQuery = $this->getStreamerExistsQuery(['streamer-1']);
+
         $notifyDiscordClips = new NotifyDiscordClips(
             $logger,
             $discord,
@@ -161,7 +168,117 @@ class NotifyDiscordClipsTest extends TestCase
             $guildSettingsRepository,
             $streamerRepository,
             $this->getEmbedQuery(),
-            $notifiedClipsRepository
+            $notifiedClipsRepository,
+            $checkStreamerExistsQuery
+        );
+
+        $notifyDiscordClips->execute();
+    }
+
+    public function testExecuteStreamerDoesNotExist(): void
+    {
+        $logger = new DebugLogger();
+        $discord = $this->mockDiscord();
+        $twitchWrapper = $this->createMock(TwitchWrapper::class);
+        $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
+        $streamerRepository = $this->createMock(StreamerRepository::class);
+        $notifiedClipsRepository = $this->createMock(NotifiedClipsRepository::class);
+
+        $discord->expects($this->once())
+            ->method('__get')
+            ->with('guilds')
+            ->willReturn([
+                $this->mockGuild([['id', '1'], ['name', '1']]),
+            ]);
+
+        $guildSettingsRepository->expects($this->exactly(1))
+            ->method('load')
+            ->willReturnMap([
+                ['1', $this->getGuildSettings('1')],
+            ]);
+
+
+        $streamerRepository->expects($this->never())->method('getStreamerByLogin');
+
+        $checkStreamerExistsQuery = $this->getStreamerExistsQuery([]);
+
+        $notifyDiscordClips = new NotifyDiscordClips(
+            $logger,
+            $discord,
+            $twitchWrapper,
+            $guildSettingsRepository,
+            $streamerRepository,
+            $this->getEmbedQuery(),
+            $notifiedClipsRepository,
+            $checkStreamerExistsQuery
+        );
+
+        $notifyDiscordClips->execute();
+
+        $this->assertTrue($logger->checkLogContains("Notify: Streamer streamer-1 does not exist. Skipping."));
+    }
+
+    public function testExecuteNoStreamer(): void
+    {
+        $logger = new DebugLogger();
+        $discord = $this->mockDiscord();
+        $twitchWrapper = $this->createMock(TwitchWrapper::class);
+        $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
+        $streamerRepository = $this->createMock(StreamerRepository::class);
+        $notifiedClipsRepository = $this->createMock(NotifiedClipsRepository::class);
+
+        $discord->expects($this->once())
+            ->method('__get')
+            ->with('guilds')
+            ->willReturn([
+                $this->mockGuild([['id', '1'], ['name', '1']]),
+            ]);
+
+        $guildSettingsRepository->expects($this->exactly(1))
+            ->method('load')
+            ->willReturnMap([
+                ['1', $this->getGuildSettings('1')],
+            ]);
+
+        $streamerRepository->expects($this->exactly(1))
+            ->method('getStreamerByLogin')
+            ->willReturnOnConsecutiveCalls(
+                null,
+            );
+
+        $twitchWrapper->expects($this->exactly(1))
+            ->method('getStreamer')
+            ->willReturnOnConsecutiveCalls(
+                null,
+            );
+
+        $twitchWrapper->expects($this->never())
+            ->method('getClips');
+
+        $notifiedClipsRepository->expects($this->never())
+            ->method('isNotified')
+            ->willReturn(false);
+
+        $notifiedClipsRepository->expects($this->never())
+            ->method('add');
+
+        $discord->expects($this->never())
+            ->method('getChannel')
+            ->willReturnMap([
+                ['channel-1', null],
+            ]);
+
+        $checkStreamerExistsQuery = $this->getStreamerExistsQuery(['streamer-1']);
+
+        $notifyDiscordClips = new NotifyDiscordClips(
+            $logger,
+            $discord,
+            $twitchWrapper,
+            $guildSettingsRepository,
+            $streamerRepository,
+            $this->getEmbedQuery(),
+            $notifiedClipsRepository,
+            $checkStreamerExistsQuery
         );
 
         $notifyDiscordClips->execute();
@@ -169,8 +286,8 @@ class NotifyDiscordClipsTest extends TestCase
 
     public function testExecuteClipAlreadyNotified(): void
     {
-        $logger = $this->createMock(LoggerInterface::class);
-        $discord = $this->createMock(Discord::class);
+        $logger = new DebugLogger();
+        $discord = $this->mockDiscord();
         $twitchWrapper = $this->createMock(TwitchWrapper::class);
         $guildSettingsRepository = $this->createMock(GuildSettingsRepository::class);
         $streamerRepository = $this->createMock(StreamerRepository::class);
@@ -209,7 +326,9 @@ class NotifyDiscordClipsTest extends TestCase
             ->method('add');
 
         $discord->expects($this->never())
-            ->method('getChannel');;
+            ->method('getChannel');
+
+        $checkStreamerExistsQuery = $this->getStreamerExistsQuery(['streamer-1']);
 
         $notifyDiscordClips = new NotifyDiscordClips(
             $logger,
@@ -218,7 +337,8 @@ class NotifyDiscordClipsTest extends TestCase
             $guildSettingsRepository,
             $streamerRepository,
             $this->getEmbedQuery(),
-            $notifiedClipsRepository
+            $notifiedClipsRepository,
+            $checkStreamerExistsQuery
         );
 
         $notifyDiscordClips->execute();
@@ -274,7 +394,8 @@ class NotifyDiscordClipsTest extends TestCase
 
     private function getEmbedQuery(): DiscordClipEmbedQuery
     {
-        $discord      = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient']);
+        $discord      = $this->createPartialMock(Discord::class, ['__construct', 'getFactory', 'getHttpClient', 'getCollectionClass']);
+        $discord->method('getCollectionClass')->willReturn(\Discord\Helpers\Collection::class);
         $httpClient   = $this->createMock(\Discord\Http\Http::class);
         $factory      = new \Discord\Factory\Factory($discord, $httpClient);
         $gameRepo     = $this->createMock(GameRepository::class);
@@ -294,6 +415,19 @@ class NotifyDiscordClipsTest extends TestCase
         $discord->method('getHttpClient')->willReturn($httpClient);
 
         $query = new DiscordClipEmbedQuery($discord, $gameRepo, $streamerRepo);
+
+        return $query;
+    }
+
+    private function getStreamerExistsQuery(array $valid = []): CheckStreamerExistsQuery
+    {
+        $query = $this->createMock(CheckStreamerExistsQuery::class);
+
+        $query->expects($this->any())
+            ->method('check')
+            ->willReturnCallback(function (GuildSettings $guildSettings, string $streamer) use ($valid) {
+                return in_array($streamer, $valid);
+            });
 
         return $query;
     }

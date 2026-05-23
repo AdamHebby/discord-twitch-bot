@@ -28,6 +28,13 @@ class Benchmarker
         $this->active[$key] = microtime(true);
     }
 
+    public function killActive(string $key): void
+    {
+        if (isset($this->active[$key])) {
+            unset($this->active[$key]);
+        }
+    }
+
     public function stop(string $key): void
     {
         if (!isset($this->active[$key])) {

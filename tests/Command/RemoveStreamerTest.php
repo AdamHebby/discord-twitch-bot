@@ -10,6 +10,8 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\NullLogger;
 
+use function React\Promise\resolve;
+
 class RemoveStreamerTest extends TestCase
 {
     use DiscordMocker;
@@ -54,8 +56,10 @@ class RemoveStreamerTest extends TestCase
                 return $guildSettings->hasStreamer('teststreamer') === false;
             }));
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'teststreamer is no longer being watched!';
@@ -100,8 +104,10 @@ class RemoveStreamerTest extends TestCase
             ->expects($this->never())
             ->method('save');
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'teststreamer is not being watched!';

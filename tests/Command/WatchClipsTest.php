@@ -15,6 +15,8 @@ use DiscordTwitchBot\Repository\StreamerRepository;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\NullLogger;
 
+use function React\Promise\resolve;
+
 class WatchClipsTest extends TestCase
 {
     use DiscordMocker;
@@ -98,8 +100,10 @@ class WatchClipsTest extends TestCase
                     && $guildSettings->getClipChannel('teststreamer') === 'channel_id_here';
             }));
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Clips for streamer `teststreamer` will now be posted in <#channel_id_here>.';
@@ -158,8 +162,10 @@ class WatchClipsTest extends TestCase
             ->expects($this->never())
             ->method('add');
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Streamer `teststreamer` does not exist.';
@@ -234,8 +240,10 @@ class WatchClipsTest extends TestCase
             ->method('add')
             ->with($streamer);
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Channel <#channel_id_here> not found.';
@@ -320,8 +328,10 @@ class WatchClipsTest extends TestCase
             ->expects($this->never())
             ->method('save');
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Clips for streamer `teststreamer` are already being posted in <#channel_id_here>.';

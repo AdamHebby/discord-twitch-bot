@@ -10,6 +10,8 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Test\DiscordMocker;
 use Psr\Log\NullLogger;
 
+use function React\Promise\resolve;
+
 class UnwatchClipsTest extends TestCase
 {
     use DiscordMocker;
@@ -53,8 +55,10 @@ class UnwatchClipsTest extends TestCase
                 return $guildSettings->getClipChannel('teststreamer') === null;
             }));
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Clips for streamer teststreamer will no longer be posted.';
@@ -99,8 +103,10 @@ class UnwatchClipsTest extends TestCase
             ->expects($this->never())
             ->method('save');
 
+        $interaction->expects($this->once())->method('acknowledgeWithResponse')->willReturn(resolve(true));
+
         $interaction->expects($this->once())
-            ->method('respondWithMessage')
+            ->method('updateOriginalResponse')
             ->with($this->callback(function (MessageBuilder $message) {
                 $data = json_decode(json_encode($message), true);
                 return $data['content'] === 'Clips for streamer teststreamer are not being posted.';

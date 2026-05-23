@@ -2,7 +2,7 @@
     "name": "adamhebby/discord-twitch-bot",
     "type": "project",
     "require": {
-        "team-reflex/discord-php": "^7.3",
+        "team-reflex/discord-php": "^10",
         "nicklaw5/twitch-api-php": "^7.2",
         "symfony/dotenv": "^7.1",
         "php": "^8.2"

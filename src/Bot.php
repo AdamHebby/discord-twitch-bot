@@ -4,17 +4,15 @@ namespace DiscordTwitchBot;
 
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
+use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
-use DiscordTwitchBot\Application\NotifyDiscordClips;
-use DiscordTwitchBot\Application\NotifyDiscordLiveStreams;
-use DiscordTwitchBot\Application\Query\DiscordClipEmbedQuery;
-use DiscordTwitchBot\Application\Query\DiscordLiveEmbedQuery;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Command\AddStreamer;
 use DiscordTwitchBot\Command\CommandHandler;
 use DiscordTwitchBot\Command\Help;
+use DiscordTwitchBot\Command\ListClips;
 use DiscordTwitchBot\Command\ListStreamers;
 use DiscordTwitchBot\Command\RemoveStreamer;
 use DiscordTwitchBot\Command\UnwatchClips;
@@ -67,13 +65,17 @@ class Bot
             new UnwatchClips(
                 $this->logger,
                 $this->guildSettingsRepository,
-            )
+            ),
+            new ListClips(
+                $this->logger,
+                $this->guildSettingsRepository,
+            ),
         ]);
     }
 
     public function run(): void
     {
-        $this->discord->on('ready', function () {
+        $this->discord->on('init', function () {
             foreach ($this->commandHandler->getCommands() as $cmd) {
                 $this->discord->application->commands->save(
                     $this->discord->application->commands->create(
@@ -88,57 +90,73 @@ class Bot
         });
 
         $this->discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction) {
-            $this->logger->info('Interaction received: /' . $interaction->data->name);
-            $this->commandHandler->handle($interaction);
+            try {
+                $this->logger->info('Interaction received: /' . $interaction->data->name);
+                $this->commandHandler->handle($interaction);
+            } catch (\Throwable $th) {
+                $this->logger->error($th->getMessage());
+                $this->logger->error($th->getTraceAsString());
+            }
         });
 
         $this->discord->on(Event::MESSAGE_CREATE, function (Message $message) {
             if ($message->content === '!sb restart' && $message->author->id === $_ENV['DISCORD_OWNER_ID']) {
-                $message->react('👍')->done(function () {
+                $message->react('👍')->then(function () {
                     sleep(1);
                     $this->logger->info('Restarting bot...');
                     $this->discord->close();
                     exit();
+                })->catch(function (\Throwable $e) {
+                    $this->logger->error($e);
                 });
             }
         });
 
-        $notify = new NotifyDiscordLiveStreams(
-            $this->logger,
-            $this->discord,
-            $this->twitchWrapper,
-            $this->guildSettingsRepository,
-            $this->notifiedStreamsRepository,
-            $this->streamerRepository,
-            new DiscordLiveEmbedQuery($this->discord),
-            $this->gameRepository
-        );
+        $this->discord->on(Event::GUILD_CREATE, function (Guild $guild) {
+            $this->logger->info("Joined a new guild: {$guild->name} (ID: {$guild->id})");
 
-        $clipNotify = new NotifyDiscordClips(
-            $this->logger,
-            $this->discord,
-            $this->twitchWrapper,
-            $this->guildSettingsRepository,
-            $this->streamerRepository,
-            new DiscordClipEmbedQuery($this->discord, $this->gameRepository, $this->streamerRepository),
-            $this->notifiedClipsRepository
-        );
+            $whitelist = $_ENV['DISCORD_GUILD_WHITELIST'];
 
-        $this->discord->getLoop()->addPeriodicTimer(60, function () use ($notify) {
-            try {
-                $notify->execute();
-            } catch (\Throwable $th) {
-                $this->logger->error($th->getMessage());
-                $this->logger->error($th->getTraceAsString());
+            if (empty($whitelist)) {
+                $this->logger->warning("Guild whitelist is empty.");
+                return;
+            }
+
+            if (!in_array($guild->id, explode(',', $whitelist))) {
+                $this->logger->warning("Guild {$guild->name} (ID: {$guild->id}) is not whitelisted.");
+                $this->notifyPushover("Guild {$guild->name} (ID: {$guild->id}) is not whitelisted. Leaving...");
+                $guild->leave()->then(
+                    fn () => $this->logger->info("Left guild: {$guild->name} (ID: {$guild->id})")
+                )->catch(
+                    fn (\Throwable $e) => $this->logger->error("Failed to leave guild: {$guild->name} (ID: {$guild->id}) - " . $e->getMessage())
+                );
+                return;
+            } else {
+                $this->logger->info("Guild {$guild->name} (ID: {$guild->id}) is whitelisted.");
             }
         });
 
-        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () use ($clipNotify) {
+        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () {
             try {
-                $clipNotify->execute();
+                $avg = Benchmarker::getInstance()->avgAll();
+                $maxKeyLen = max(array_map('strlen', array_keys($avg))) + 2;
+                $avg = array_map(
+                    fn($k, $v) => sprintf('%s  %s', str_pad($k, $maxKeyLen), number_format($v, 4)),
+                    array_keys($avg),
+                    $avg
+                );
+
+                file_put_contents(__DIR__ . '/../benchmarks.txt', implode(PHP_EOL, $avg));
+
+                $this->logger->info("Benchmarks:");
+                foreach ($avg as $line) {
+                    $this->logger->info($line);
+                }
+
+                Benchmarker::getInstance()->reset();
             } catch (\Throwable $th) {
-                $this->logger->error($th->getMessage());
-                $this->logger->error($th->getTraceAsString());
+                // $this->logger->error($th->getMessage());
+                // $this->logger->error($th->getTraceAsString());
             }
         });
 
@@ -147,5 +165,13 @@ class Bot
         });
 
         $this->discord->run();
+    }
+
+    private function notifyPushover(string $message): void
+    {
+        @exec(sprintf(
+            '/usr/local/bin/pushover -p 1 -T "Twitch Bot" "%s"',
+            escapeshellarg($message)
+        ));
     }
 }
