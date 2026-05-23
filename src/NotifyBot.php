@@ -3,6 +3,7 @@
 namespace DiscordTwitchBot;
 
 use Discord\Discord;
+use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Application\NotifyDiscordClips;
 use DiscordTwitchBot\Application\NotifyDiscordLiveStreams;
 use DiscordTwitchBot\Application\PushoverNotifier;
@@ -88,6 +89,10 @@ class NotifyBot
                 $this->logger->error($th->getMessage());
                 $this->logger->error($th->getTraceAsString());
             }
+        });
+
+        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () {
+            Benchmarker::writeToFile(__DIR__ . '/../benchmarks.txt');
         });
 
         $this->discord->getLoop()->addPeriodicTimer(15, function () {

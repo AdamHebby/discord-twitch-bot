@@ -91,4 +91,25 @@ class Benchmarker
         $this->active = [];
         $this->timings = [];
     }
+
+    public static function writeToFile(string $filename): void
+    {
+        try {
+            $avg = Benchmarker::getInstance()->avgAll();
+            $maxKeyLen = max(array_map('strlen', array_keys($avg))) + 2;
+            $avg = array_map(
+                fn($k, $v) => sprintf('%s  %s', str_pad($k, $maxKeyLen), number_format($v, 4)),
+                array_keys($avg),
+                $avg
+            );
+
+            $prefix = " --- " . date('Y-m-d H:i:s') . " --- " . PHP_EOL;
+
+            file_put_contents($filename, $prefix, FILE_APPEND);
+            file_put_contents($filename, implode(PHP_EOL, $avg) . PHP_EOL, FILE_APPEND);
+
+            Benchmarker::getInstance()->reset();
+        } catch (\Throwable $th) {
+        }
+    }
 }

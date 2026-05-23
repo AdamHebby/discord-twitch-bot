@@ -35,8 +35,11 @@ abstract class Command
 
     public function interactionReply(Interaction $interaction, string $message): void
     {
-        $interaction->acknowledgeWithResponse()->then(function() use ($interaction, $message) {
+        if ($interaction->isResponded()) {
             $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($message));
-        });
+            return;
+        }
+
+        $interaction->respondWithMessage(MessageBuilder::new()->setContent($message));
     }
 }

@@ -8,6 +8,7 @@ use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event;
 use DiscordTwitchBot\Application\Benchmarker;
+use DiscordTwitchBot\Application\PushoverNotifier;
 use DiscordTwitchBot\ClientWrapper\TwitchWrapper;
 use DiscordTwitchBot\Command\AddStreamer;
 use DiscordTwitchBot\Command\CommandHandler;
@@ -88,9 +89,19 @@ class Bot
 
         $this->discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction) {
             try {
-                $this->logger->info('Interaction received: /' . $interaction->data->name);
-                $this->commandHandler->handle($interaction);
+                Benchmarker::getInstance()->start('Interaction: ' . $interaction->data->name);
+                $interaction->acknowledge()->then(function () use ($interaction) {
+                    $this->logger->debug('Interaction acknowledged: ' . $interaction->data->name);
+
+                    $this->logger->info('Interaction received: /' . $interaction->data->name);
+                    $this->commandHandler->handle($interaction);
+                })->catch(function (\Throwable $e) use ($interaction) {
+                    $this->logger->error('Failed to acknowledge interaction: ' . $interaction->data->name . ' - ' . $e->getMessage());
+                })->finally(function () use ($interaction) {
+                    Benchmarker::getInstance()->stop('Interaction: ' . $interaction->data->name);
+                });
             } catch (\Throwable $th) {
+                Benchmarker::getInstance()->killActive('Interaction: ' . $interaction->data->name);
                 $this->logger->error($th->getMessage());
                 $this->logger->error($th->getTraceAsString());
             }
@@ -134,27 +145,7 @@ class Bot
         });
 
         $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () {
-            try {
-                $avg = Benchmarker::getInstance()->avgAll();
-                $maxKeyLen = max(array_map('strlen', array_keys($avg))) + 2;
-                $avg = array_map(
-                    fn($k, $v) => sprintf('%s  %s', str_pad($k, $maxKeyLen), number_format($v, 4)),
-                    array_keys($avg),
-                    $avg
-                );
-
-                file_put_contents(__DIR__ . '/../benchmarks.txt', implode(PHP_EOL, $avg));
-
-                $this->logger->info("Benchmarks:");
-                foreach ($avg as $line) {
-                    $this->logger->info($line);
-                }
-
-                Benchmarker::getInstance()->reset();
-            } catch (\Throwable $th) {
-                // $this->logger->error($th->getMessage());
-                // $this->logger->error($th->getTraceAsString());
-            }
+            Benchmarker::writeToFile(__DIR__ . '/../benchmarks.txt');
         });
 
         $this->discord->getLoop()->addPeriodicTimer(15, function () {
@@ -166,9 +157,6 @@ class Bot
 
     private function notifyPushover(string $message): void
     {
-        @exec(sprintf(
-            '/usr/local/bin/pushover -p 1 -T "Twitch Bot" "%s"',
-            escapeshellarg($message)
-        ));
+        PushoverNotifier::factory()->sendNotification($message);
     }
 }
