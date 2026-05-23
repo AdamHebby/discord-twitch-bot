@@ -7,6 +7,7 @@ class GuildSettings
     /**
      * @param array<string,string|null> $streamers
      * @param array<string,string> $channels
+     * @param array<string,string> $clipChannels
      */
     public function __construct(
         private string $guildId,

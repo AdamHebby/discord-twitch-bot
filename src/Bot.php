@@ -33,10 +33,7 @@ class Bot
         private readonly TwitchWrapper $twitchWrapper,
         private readonly LoggerInterface $logger,
         private readonly GuildSettingsRepository $guildSettingsRepository,
-        private readonly NotifiedStreamsRepository $notifiedStreamsRepository,
         private readonly StreamerRepository $streamerRepository,
-        private readonly GameRepository $gameRepository,
-        private readonly NotifiedClipsRepository $notifiedClipsRepository,
     ) {
         $this->commandHandler = new CommandHandler();
 

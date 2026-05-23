@@ -28,6 +28,9 @@ class TwitchClip
     ) {
     }
 
+    /**
+     * @param array<string,mixed> $jsonData
+     */
     public static function fromJsonArray(array $jsonData): self
     {
         $utc = new DateTimeZone("UTC");

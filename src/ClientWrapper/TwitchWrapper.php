@@ -159,6 +159,11 @@ class TwitchWrapper
         return array_column($games, 'name', 'id');
     }
 
+    /**
+     * @param int $count
+     *
+     * @return array<array{id: string, name: string, box_art_url: string, igdb_id: string|null}>
+     */
     public function getTopGamesData(int $count = 500): array
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);

@@ -111,6 +111,7 @@ class NotifyDiscordLiveStreams
                     $stream->id,
                     $guild->name,
                     $guild->id,
+                    // @phpstan-ignore-next-line - name is is documented correctly, not sure why phpstan is complaining
                     $discordChannel->name,
                     $discordChannel->id
                 ));

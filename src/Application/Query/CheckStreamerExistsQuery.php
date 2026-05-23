@@ -12,6 +12,9 @@ use Psr\Log\LoggerInterface;
 
 class CheckStreamerExistsQuery
 {
+    /**
+     * @var array<string,bool> $streamersCache
+     */
     private array $streamersCache = [];
 
     public function __construct(
@@ -42,6 +45,7 @@ class CheckStreamerExistsQuery
         }
 
         if ($exists === false) {
+            $this->streamerRepository->removeByLogin($streamerLogin);
             $guildSettings->removeClipChannel($streamerLogin);
             $guildSettings->removeStreamer($streamerLogin);
             $this->guildSettingsRepository->save($guildSettings);

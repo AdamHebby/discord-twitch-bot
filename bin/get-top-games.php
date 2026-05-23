@@ -38,6 +38,9 @@ $twitch = new TwitchWrapper(
 );
 
 $gameRepository = new GameRepository(__DIR__ . '/../data/games.db');
-foreach ($twitch->getTopGames(2000) as $gameId => $gameName) {
-    $gameRepository->add($gameId, $gameName);
-}
+// foreach ($twitch->getTopGames(2000) as $gameId => $gameName) {
+//     $gameRepository->add($gameId, $gameName);
+// }
+
+
+var_dump($twitch->getTopGamesData(10));

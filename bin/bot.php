@@ -143,10 +143,7 @@ $bot = new Bot(
     ),
     $botLogger,
     new GuildSettingsRepository(__DIR__ . '/../data/'),
-    new NotifiedStreamsRepository(__DIR__ . '/../data/notified_streams.db'),
     new StreamerRepository(__DIR__ . '/../data/streamer.db'),
-    new GameRepository(__DIR__ . '/../data/games.db'),
-    new NotifiedClipsRepository(__DIR__ . '/../data/notified_clips.db')
 );
 
 Benchmarker::getInstance()->stop('Boot');

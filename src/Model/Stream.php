@@ -80,6 +80,9 @@ class Stream
         );
     }
 
+    /**
+     * @return array<string,mixed>
+     */
     public function toArray(): array
     {
         return [
