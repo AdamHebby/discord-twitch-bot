@@ -7,6 +7,8 @@ use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class RemoveStreamer extends Command
 {
@@ -38,33 +40,34 @@ class RemoveStreamer extends Command
         ];
     }
 
-    public function execute(Interaction $interaction): void
+    public function execute(Interaction $interaction): PromiseInterface
     {
-        Benchmarker::getInstance()->start(__CLASS__);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            Benchmarker::getInstance()->start(__CLASS__);
 
-        $streamer = $interaction->data->options['streamer']->value;
-        $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
+            $streamer = $interaction->data->options['streamer']->value;
+            $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
-        if ($guildSettings->hasStreamer($streamer) === false) {
-            $this->interactionReply($interaction, "{$streamer} is not being watched!");
-            Benchmarker::getInstance()->killActive(__CLASS__);
-            return;
-        }
+            if ($guildSettings->hasStreamer($streamer) === false) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                return $this->interactionReply($interaction, "{$streamer} is not being watched!");
+            }
 
-        $guildSettings->removeStreamer($streamer);
-        $this->guildSettingsRepository->save($guildSettings);
+            $guildSettings->removeStreamer($streamer);
+            $this->guildSettingsRepository->save($guildSettings);
 
-        $this->interactionReply($interaction, "{$streamer} is no longer being watched!");
+            $this->logger->info(sprintf(
+                'Removed streamer %s from guild "%s" (%s) by user "%s" (%s)',
+                $streamer,
+                $interaction->guild->name,
+                $interaction->guild_id,
+                $interaction->member->username,
+                $interaction->member->id
+            ));
 
-        $this->logger->info(sprintf(
-            'Removed streamer %s from guild "%s" (%s) by user "%s" (%s)',
-            $streamer,
-            $interaction->guild->name,
-            $interaction->guild_id,
-            $interaction->member->username,
-            $interaction->member->id
-        ));
+            Benchmarker::getInstance()->stop(__CLASS__);
 
-        Benchmarker::getInstance()->stop(__CLASS__);
+            return $this->interactionReply($interaction, "{$streamer} is no longer being watched!");
+        });
     }
 }

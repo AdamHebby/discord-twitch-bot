@@ -94,11 +94,16 @@ class Bot
                     $this->logger->debug('Interaction acknowledged: ' . $interaction->data->name);
 
                     $this->logger->info('Interaction received: /' . $interaction->data->name);
-                    $this->commandHandler->handle($interaction);
+
+                    $this->commandHandler->handle($interaction)->then(function() use ($interaction) {
+                        $this->logger->info('Interaction handled successfully: ' . $interaction->data->name);
+                    }, function($error) use ($interaction) {
+                        $this->logger->error('Error handling interaction: ' . $interaction->data->name . ' - ' . $error->getMessage());
+                    })->finally(function() use ($interaction) {
+                        Benchmarker::getInstance()->stop('Interaction: ' . $interaction->data->name);
+                    });
                 })->catch(function (\Throwable $e) use ($interaction) {
                     $this->logger->error('Failed to acknowledge interaction: ' . $interaction->data->name . ' - ' . $e->getMessage());
-                })->finally(function () use ($interaction) {
-                    Benchmarker::getInstance()->stop('Interaction: ' . $interaction->data->name);
                 });
             } catch (\Throwable $th) {
                 Benchmarker::getInstance()->killActive('Interaction: ' . $interaction->data->name);
@@ -144,7 +149,7 @@ class Bot
             }
         });
 
-        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () {
+        $this->discord->getLoop()->addPeriodicTimer($_ENV['BENCHMARKER_SECONDS'] ?? 180, function () {
             Benchmarker::writeToFile(__DIR__ . '/../benchmarks.txt');
         });
 

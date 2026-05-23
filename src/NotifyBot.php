@@ -91,7 +91,7 @@ class NotifyBot
             }
         });
 
-        $this->discord->getLoop()->addPeriodicTimer(60 * 5, function () {
+        $this->discord->getLoop()->addPeriodicTimer($_ENV['BENCHMARKER_SECONDS'] ?? 180, function () {
             Benchmarker::writeToFile(__DIR__ . '/../benchmarks.txt');
         });
 

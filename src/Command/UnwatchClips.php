@@ -7,6 +7,8 @@ use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class UnwatchClips extends Command
 {
@@ -41,36 +43,36 @@ class UnwatchClips extends Command
         ];
     }
 
-    public function execute(Interaction $interaction): void
+    public function execute(Interaction $interaction): PromiseInterface
     {
-        Benchmarker::getInstance()->start(__CLASS__);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            Benchmarker::getInstance()->start(__CLASS__);
 
-        $options       = $interaction->data->options;
-        $streamer      = strtolower($options['streamer']->value);
-        $guildId       = $interaction->guild_id;
-        $guildSettings = $this->guildSettingsRepository->load($guildId);
+            $options       = $interaction->data->options;
+            $streamer      = strtolower($options['streamer']->value);
+            $guildId       = $interaction->guild_id;
+            $guildSettings = $this->guildSettingsRepository->load($guildId);
 
-        if ($guildSettings->getClipChannel($streamer) === null) {
-            $this->interactionReply($interaction, "Clips for streamer $streamer are not being posted.");
-            Benchmarker::getInstance()->killActive(__CLASS__);
-            return;
-        }
+            if ($guildSettings->getClipChannel($streamer) === null) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                return $this->interactionReply($interaction, "Clips for streamer $streamer are not being posted.");
+            }
 
-        $guildSettings->removeClipChannel($streamer);
+            $guildSettings->removeClipChannel($streamer);
 
-        $this->guildSettingsRepository->save($guildSettings);
+            $this->guildSettingsRepository->save($guildSettings);
 
-        $this->interactionReply($interaction, "Clips for streamer $streamer will no longer be posted.");
+            $this->logger->info(sprintf(
+                'Removed clip channel for streamer %s from guild "%s" (%s) by user "%s" (%s)',
+                $streamer,
+                $interaction->guild->name,
+                $interaction->guild_id,
+                $interaction->member->username,
+                $interaction->member->id,
+            ));
 
-        $this->logger->info(sprintf(
-            'Removed clip channel for streamer %s from guild "%s" (%s) by user "%s" (%s)',
-            $streamer,
-            $interaction->guild->name,
-            $interaction->guild_id,
-            $interaction->member->username,
-            $interaction->member->id,
-        ));
-
-        Benchmarker::getInstance()->stop(__CLASS__);
+            Benchmarker::getInstance()->stop(__CLASS__);
+            return $this->interactionReply($interaction, "Clips for streamer $streamer will no longer be posted.");
+        });
     }
 }

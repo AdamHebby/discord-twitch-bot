@@ -6,6 +6,9 @@ use Discord\Builders\CommandBuilder;
 use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use Discord\Parts\Interactions\Interaction;
+use DiscordTwitchBot\Application\Benchmarker;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 abstract class Command
 {
@@ -13,7 +16,7 @@ abstract class Command
 
     abstract public function getDescription(): string;
 
-    abstract public function execute(Interaction $message): void;
+    abstract public function execute(Interaction $message): PromiseInterface;
 
     /**
      * @return CommandOption[]
@@ -33,13 +36,19 @@ abstract class Command
         return $command;
     }
 
-    public function interactionReply(Interaction $interaction, string $message): void
+    public function interactionReply(Interaction $interaction, string $message): PromiseInterface
     {
-        if ($interaction->isResponded()) {
-            $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($message));
-            return;
-        }
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction, $message) {
+            Benchmarker::getInstance()->start('interactionReply');
+            if ($interaction->isResponded()) {
+                return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($message))->finally(function() {
+                    Benchmarker::getInstance()->stop('interactionReply');
+                });
+            }
 
-        $interaction->respondWithMessage(MessageBuilder::new()->setContent($message));
+            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($message))->finally(function() {
+                Benchmarker::getInstance()->stop('interactionReply');
+            });
+        });
     }
 }

@@ -10,6 +10,7 @@ use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use DiscordTwitchBot\Repository\StreamerRepository;
 use Psr\Log\LoggerInterface;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class AddStreamer extends Command
 {
@@ -59,82 +60,87 @@ class AddStreamer extends Command
         ];
     }
 
-    public function execute(Interaction $interaction): void
+    public function execute(Interaction $interaction): PromiseInterface
     {
-        Benchmarker::getInstance()->start(__CLASS__);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
 
-        $options       = $interaction->data->options;
-        $streamer      = strtolower($options['streamer']->value);
-        $channelId     = $options['channel']->value;
-        $customMessage = $options['custom_message']?->value;
-        $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
+            Benchmarker::getInstance()->start(__CLASS__);
 
-        if (empty($customMessage) || $customMessage == null) {
-            $customMessage = null;
-        }
+            $options       = $interaction->data->options;
+            $streamer      = strtolower($options['streamer']->value);
+            $channelId     = $options['channel']->value;
+            $customMessage = $options['custom_message']?->value;
+            $guildSettings = $this->guildSettingsRepository->load($interaction->guild_id);
 
-        $channel = $interaction->guild->channels->get('id', $channelId);
-        if ($channel === null) {
-            $this->interactionReply($interaction, "I can't see the channel <#{$channelId}>.");
-            return;
-        }
+            if (empty($customMessage) || $customMessage == null) {
+                $customMessage = null;
+            }
 
-        $alreadyWatching = $guildSettings->hasStreamer($streamer);
-
-        if ($alreadyWatching) {
-            $oldChannel = $guildSettings->getStreamerChannel($streamer);
-            $oldMessage = $guildSettings->getStreamerMessage($streamer);
-
-            if ($oldChannel === $channel->id && $oldMessage === $customMessage) {
-                $this->interactionReply(
-                    $interaction,
-                    "{$streamer} is already being watched in that channel with that message!"
-                );
+            $channel = $interaction->guild->channels->get('id', $channelId);
+            if ($channel === null) {
+                $this->interactionReply($interaction, "I can't see the channel <#{$channelId}>.");
                 return;
             }
-        }
 
-        $streamerObject = $this->twitchApi->getStreamer($streamer);
+            $alreadyWatching = $guildSettings->hasStreamer($streamer);
 
-        if ($streamerObject === null) {
-            $this->interactionReply($interaction, "{$streamer} is not a valid Twitch streamer!");
-            return;
-        }
+            if ($alreadyWatching) {
+                $oldChannel = $guildSettings->getStreamerChannel($streamer);
+                $oldMessage = $guildSettings->getStreamerMessage($streamer);
 
-        try {
-            $this->streamerRepository->add($streamerObject);
-        } catch (\Throwable $th) {
-            $this->logger->error("Failed to add streamer {$streamer}: " . $th->getMessage());
-            // $this->interactionReply($interaction, "Failed to add streamer {$streamer}. Please try again later.");
-            return;
-        }
+                if ($oldChannel === $channel->id && $oldMessage === $customMessage) {
+                    $this->interactionReply(
+                        $interaction,
+                        "{$streamer} is already being watched in that channel with that message!"
+                    );
+                    return;
+                }
+            }
 
+            $streamerObject = $this->twitchApi->getStreamer($streamer);
 
-        $guildSettings->addStreamer($streamer, $customMessage, $channel->id);
-        $this->guildSettingsRepository->save($guildSettings);
+            if ($streamerObject === null) {
+                return $this->interactionReply($interaction, "{$streamer} is not a valid Twitch streamer!");
+            }
 
-        if ($alreadyWatching) {
-            $this->interactionReply(
-                $interaction,
-                "{$streamer} is already being watched, but I've updated the channel and message!"
-            );
-        } else {
-            $this->interactionReply(
-                $interaction,
-                "{$streamer} is now being watched!"
-            );
-        }
+            try {
+                $this->streamerRepository->add($streamerObject);
+            } catch (\Throwable $th) {
+                $this->logger->error("Failed to add streamer {$streamer}: " . $th->getMessage());
+                // $this->interactionReply($interaction, "Failed to add streamer {$streamer}. Please try again later.");
 
-        $this->logger->info(sprintf(
-            'Added streamer %s to guild "%s" (%s) by user %s (%s) with custom message "%s"',
-            $streamer,
-            $interaction->guild->name,
-            $interaction->guild_id,
-            $interaction->member->username,
-            $interaction->member->id,
-            $customMessage
-        ));
+                $reject(new \Exception("Failed to add streamer {$streamer}. Please try again later."));
+                return;
+            }
 
-        Benchmarker::getInstance()->stop(__CLASS__);
+            $guildSettings->addStreamer($streamer, $customMessage, $channel->id);
+            $this->guildSettingsRepository->save($guildSettings);
+
+            $replyPromise = $alreadyWatching
+                ? $this->interactionReply(
+                    $interaction,
+                    "{$streamer} is already being watched, but I've updated the channel and message!"
+                )
+                : $this->interactionReply(
+                    $interaction,
+                    "{$streamer} is now being watched!"
+                );
+
+            $replyPromise->then(function() use ($interaction, $streamer, $customMessage) {
+                $this->logger->info(sprintf(
+                    'Added streamer %s to guild "%s" (%s) by user %s (%s) with custom message "%s"',
+                    $streamer,
+                    $interaction->guild->name,
+                    $interaction->guild_id,
+                    $interaction->member->username,
+                    $interaction->member->id,
+                    $customMessage
+                ));
+
+                Benchmarker::getInstance()->stop(__CLASS__);
+            });
+
+            return $replyPromise;
+        });
     }
 }

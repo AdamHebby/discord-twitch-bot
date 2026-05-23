@@ -207,7 +207,7 @@ class TwitchWrapper
 
         $oauth = $this->twitchApi->getOauthApi();
 
-        $token = $oauth->getAppAccessToken();
+        $token = $oauth->getAppAccessToken(); // lasts for 60 days
         $data = json_decode($token->getBody()->getContents());
 
         // Your bearer token

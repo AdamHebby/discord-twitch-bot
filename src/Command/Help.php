@@ -5,6 +5,7 @@ namespace DiscordTwitchBot\Command;
 use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use Psr\Log\LoggerInterface;
+use React\Promise\PromiseInterface;
 
 class Help extends Command
 {
@@ -29,7 +30,7 @@ class Help extends Command
         return [];
     }
 
-    public function execute(Interaction $interaction): void
+    public function execute(Interaction $interaction): PromiseInterface
     {
         Benchmarker::getInstance()->start(__CLASS__);
 
@@ -52,16 +53,16 @@ class Help extends Command
             $msg .= "- `{$command->getName()}{$args}` - {$command->getDescription()}\n";
         }
 
-        $this->interactionReply($interaction, $msg);
+        return $this->interactionReply($interaction, $msg)->then(function() use ($interaction) {
+            $this->logger->info(sprintf(
+                'Help message shown to user %s (%s) in guild "%s" (%s)',
+                $interaction->member->username,
+                $interaction->member->id,
+                $interaction->guild->name,
+                $interaction->guild_id
+            ));
 
-        $this->logger->info(sprintf(
-            'Help message shown to user %s (%s) in guild "%s" (%s)',
-            $interaction->member->username,
-            $interaction->member->id,
-            $interaction->guild->name,
-            $interaction->guild_id
-        ));
-
-        Benchmarker::getInstance()->stop(__CLASS__);
+            Benchmarker::getInstance()->stop(__CLASS__);
+        });
     }
 }

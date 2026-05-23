@@ -7,6 +7,8 @@ use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use DiscordTwitchBot\Repository\GuildSettingsRepository;
 use Psr\Log\LoggerInterface;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class ListClips extends Command
 {
@@ -41,54 +43,55 @@ class ListClips extends Command
         ];
     }
 
-    public function execute(Interaction $interaction): void
+    public function execute(Interaction $interaction): PromiseInterface
     {
-        Benchmarker::getInstance()->start(__CLASS__);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            Benchmarker::getInstance()->start(__CLASS__);
 
-        $settings = $this->guildSettingsRepository->load($interaction->guild_id);
-        $channels = $settings->getClipChannels();
+            $settings = $this->guildSettingsRepository->load($interaction->guild_id);
+            $channels = $settings->getClipChannels();
 
-        if (empty($channels)) {
-            $this->interactionReply($interaction, 'No channels are being watched!');
-            Benchmarker::getInstance()->killActive(__CLASS__);
-            return;
-        }
-
-        $pageNumber = ($interaction->data->options['page']->value ?? 1) - 1;
-        $messages = [];
-        $pageFormat = "[Page %d/%d] Use the page option to see more channels.";
-        $message = '**Channels being watched for clips:**' . PHP_EOL;
-        foreach ($channels as $streamer => $channel) {
-            $addOnMessage = sprintf(
-                '- `%s` posted in <#%s>' . PHP_EOL,
-                $streamer,
-                $channel,
-            );
-
-            if (strlen($message . $addOnMessage . $pageFormat) > 2000) {
-                $messages[] = $message;
-                $message = '**Channels being watched for clips:**' . PHP_EOL . $addOnMessage;
-            } else {
-                $message .= $addOnMessage;
+            if (empty($channels)) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                return $this->interactionReply($interaction, 'No channels are being watched!');
             }
-        }
 
-        $messages[] = $message;
+            $pageNumber = ($interaction->data->options['page']->value ?? 1) - 1;
+            $messages = [];
+            $pageFormat = "[Page %d/%d] Use the page option to see more channels.";
+            $message = '**Channels being watched for clips:**' . PHP_EOL;
+            foreach ($channels as $streamer => $channel) {
+                $addOnMessage = sprintf(
+                    '- `%s` posted in <#%s>' . PHP_EOL,
+                    $streamer,
+                    $channel,
+                );
 
-        foreach ($messages as $num => $message) {
-            $messages[$num] .= sprintf($pageFormat, $num + 1, count($messages));
-        }
+                if (strlen($message . $addOnMessage . $pageFormat) > 2000) {
+                    $messages[] = $message;
+                    $message = '**Channels being watched for clips:**' . PHP_EOL . $addOnMessage;
+                } else {
+                    $message .= $addOnMessage;
+                }
+            }
 
-        $this->interactionReply($interaction, $messages[$pageNumber]);
+            $messages[] = $message;
 
-        $this->logger->info(sprintf(
-            'Clips List shown to user %s (%s) in guild "%s" (%s)',
-            $interaction->member->username,
-            $interaction->member->id,
-            $interaction->guild->name,
-            $interaction->guild_id
-        ));
+            foreach ($messages as $num => $message) {
+                $messages[$num] .= sprintf($pageFormat, $num + 1, count($messages));
+            }
 
-        Benchmarker::getInstance()->stop(__CLASS__);
+            $this->logger->info(sprintf(
+                'Clips List shown to user %s (%s) in guild "%s" (%s)',
+                $interaction->member->username,
+                $interaction->member->id,
+                $interaction->guild->name,
+                $interaction->guild_id
+            ));
+
+            Benchmarker::getInstance()->stop(__CLASS__);
+
+            return $this->interactionReply($interaction, $messages[$pageNumber]);
+        });
     }
 }

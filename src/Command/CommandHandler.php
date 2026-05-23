@@ -3,6 +3,9 @@
 namespace DiscordTwitchBot\Command;
 
 use Discord\Parts\Interactions\Interaction;
+use React\Promise\Deferred;
+use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class CommandHandler
 {
@@ -39,15 +42,21 @@ class CommandHandler
         return $this->commands[$commandName] ?? null;
     }
 
-    public function handle(Interaction $interaction): void
+    public function handle(Interaction $interaction): PromiseInterface
     {
-        $name = $interaction->data->name;
-        $command = $this->getCommand($name);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            $name = $interaction->data->name;
+            $command = $this->getCommand($name);
 
-        if ($command === null) {
-            return;
-        }
+            if ($command === null) {
+                return $reject(new \Exception("Command not found: $name"));
+            }
 
-        $command->execute($interaction);
+            $command->execute($interaction)->then(function() use ($resolve) {
+                $resolve(true);
+            }, function($error) use ($reject) {
+                $reject($error);
+            });
+        });
     }
 }
