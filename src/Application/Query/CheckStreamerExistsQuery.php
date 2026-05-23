@@ -37,7 +37,7 @@ class CheckStreamerExistsQuery
         $exists  = false;
 
         try {
-            $exists = $this->twitchWrapper->checkStreamerExists($streamerLogin) === false;
+            $exists = $this->twitchWrapper->checkStreamerExists($streamerLogin);
         } catch (\Throwable $th) {
             $this->logger->error("Error checking if streamer {$streamerLogin} exists: " . $th->getMessage());
             Benchmarker::getInstance()->stop(__CLASS__);
@@ -49,7 +49,7 @@ class CheckStreamerExistsQuery
             $guildSettings->removeClipChannel($streamerLogin);
             $guildSettings->removeStreamer($streamerLogin);
             $this->guildSettingsRepository->save($guildSettings);
-            $this->logger->debug("Streamer {$streamerLogin} does not exist. Removed.");
+            $this->logger->error("Streamer {$streamerLogin} does not exist. Removed.");
 
             $this->pushoverNotifier->sendNotification("Streamer {$streamerLogin} does not exist in guild {$guildSettings->getGuildId()}.");
 

@@ -57,6 +57,8 @@ if (!file_exists($logFilePath)) {
     $envPath = __DIR__ . '/../.env.dev';
     $logFilePath = 'php://stdout';
     $logLevel = LogLevel::DEBUG;
+
+    echo "Local dev environment detected. Logging to stdout.", PHP_EOL;
 }
 
 (new Dotenv())->load($envPath);

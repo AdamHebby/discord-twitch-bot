@@ -40,17 +40,21 @@ class NotifyDiscordLiveStreams
         Benchmarker::getInstance()->start(__CLASS__);
         $guilds = $this->discord->guilds;
 
+        $this->logger->debug("Notify: Starting live stream check for " . count($guilds) . " guilds.");
+
         /** @var Guild $guild */
         foreach ($guilds as $guild) {
             $this->logger->debug("Notify: Checking guild {$guild->name}");
             $guildSettings = $this->guildSettingsRepository->load($guild->id);
             $streamers = $guildSettings->getStreamers();
 
+            $this->logger->debug("Notify: Found " . count($streamers) . " streamers for guild {$guild->name}");
+
             foreach ($streamers as $streamer) {
                 $this->logger->debug("Notify: Checking streamer {$streamer}");
 
                 if (!$this->checkStreamerExistsQuery->check($guildSettings, $streamer)) {
-                    $this->logger->debug("Notify: Streamer {$streamer} does not exist. Skipping.");
+                    $this->logger->warning("Notify: Streamer {$streamer} does not exist. Skipping.");
                     continue;
                 }
 
