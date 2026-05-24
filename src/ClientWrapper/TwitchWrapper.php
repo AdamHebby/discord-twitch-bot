@@ -21,18 +21,16 @@ class TwitchWrapper
     public function checkStreamerExists(string $streamer): bool
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
-        $this->authorizeTwitchApi();
 
         try {
-            $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->bearerToken, $streamer);
-            $contents = json_decode($response->getBody()->getContents());
-
+            $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->getBearerToken(), $streamer);
             $statusCode = $response->getStatusCode();
 
             if ($statusCode !== 200) {
                 throw new \Exception("Twitch API returned status code {$statusCode}");
             }
 
+            $contents = json_decode($response->getBody()->getContents());
             $exists = !empty($contents->data) && $contents->data[0]->login === $streamer;
         } catch (\Throwable $th) {
             Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
@@ -47,19 +45,28 @@ class TwitchWrapper
     public function getStreamer(string $streamerLogin): ?Streamer
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
-        $this->authorizeTwitchApi();
 
-        $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->bearerToken, $streamerLogin);
-        $contents = json_decode($response->getBody()->getContents(), true);
         $streamer = null;
 
-        if (
-            $response->getStatusCode() === 200 &&
-            !empty($contents['data']) &&
-            isset($contents['data'][0]['login']) &&
-            $contents['data'][0]['login'] === $streamerLogin
-        ) {
-            $streamer = Streamer::fromJsonArray($contents['data'][0]);
+        try {
+            $response = $this->twitchApi->getUsersApi()->getUserByUsername($this->getBearerToken(), $streamerLogin);
+            $statusCode = $response->getStatusCode();
+            if ($statusCode !== 200) {
+                throw new \Exception("Twitch API returned status code {$statusCode}");
+            }
+
+            $contents = json_decode($response->getBody()->getContents(), true);
+
+            if (
+                !empty($contents['data']) &&
+                isset($contents['data'][0]['login']) &&
+                $contents['data'][0]['login'] === $streamerLogin
+            ) {
+                $streamer = Streamer::fromJsonArray($contents['data'][0]);
+            }
+        } catch (\Throwable $th) {
+            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            throw $th;
         }
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
@@ -71,17 +78,26 @@ class TwitchWrapper
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
 
-        $this->authorizeTwitchApi();
+        try {
+            $response = $this->twitchApi->getStreamsApi()->getStreamForUsername($this->getBearerToken(), $streamer);
+            $statusCode = $response->getStatusCode();
 
-        $response = $this->twitchApi->getStreamsApi()->getStreamForUsername($this->bearerToken, $streamer);
-        $contents = json_decode($response->getBody()->getContents(), true);
+            if ($statusCode !== 200) {
+                throw new \Exception("Twitch API returned status code {$statusCode}");
+            }
 
-        if (empty($contents['data'])) {
+            $contents = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($contents['data'])) {
+                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                return null;
+            }
+
+            $stream = Stream::fromJsonArray($contents['data'][0]);
+        } catch (\Throwable $th) {
             Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
-            return null;
+            throw $th;
         }
-
-        $stream = Stream::fromJsonArray($contents['data'][0]);
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
 
@@ -97,24 +113,33 @@ class TwitchWrapper
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
 
-        $this->authorizeTwitchApi();
+        try {
+            $response = $this->twitchApi->getClipsApi()->getClipsByBroadcasterId(
+                $this->getBearerToken(),
+                $streamerId,
+                20,
+                null,
+                null,
+                // API Docs state RFC3339 format but that 400s. This format works.
+                $started->format('Y-m-d\TH:i:s\Z'),
+                $ended->format('Y-m-d\TH:i:s\Z'),
+            );
 
-        $response = $this->twitchApi->getClipsApi()->getClipsByBroadcasterId(
-            $this->bearerToken,
-            $streamerId,
-            20,
-            null,
-            null,
-            // API Docs state RFC3339 format but that 400s. This format works.
-            $started->format('Y-m-d\TH:i:s\Z'),
-            $ended->format('Y-m-d\TH:i:s\Z'),
-        );
+            $statusCode = $response->getStatusCode();
 
-        $contents = json_decode($response->getBody()->getContents(), true);
+            if ($statusCode !== 200) {
+                throw new \Exception("Twitch API returned status code {$statusCode}");
+            }
 
-        if (empty($contents['data'])) {
+            $contents = json_decode($response->getBody()->getContents(), true);
+
+            if (empty($contents['data'])) {
+                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                return [];
+            }
+        } catch (\Throwable $th) {
             Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
-            return [];
+            throw $th;
         }
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
@@ -131,28 +156,37 @@ class TwitchWrapper
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
 
-        $this->authorizeTwitchApi();
-
         $first = 100;
         $after = null;
         $games = [];
 
-        for ($i = 0; $i < $count / $first; $i++) {
-            $response = $this->twitchApi->getGamesApi()->getTopGames($this->bearerToken, $first, null, $after);
-            $contents = json_decode($response->getBody()->getContents(), true);
+        try {
+            for ($i = 0; $i < $count / $first; $i++) {
+                $response = $this->twitchApi->getGamesApi()->getTopGames($this->getBearerToken(), $first, null, $after);
+                $statusCode = $response->getStatusCode();
 
-            if (empty($contents['data'])) {
-                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
-                return array_column($games, 'name', 'id');
+                if ($statusCode !== 200) {
+                    throw new \Exception("Twitch API returned status code {$statusCode}");
+                }
+
+                $contents = json_decode($response->getBody()->getContents(), true);
+
+                if (empty($contents['data'])) {
+                    Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                    return array_column($games, 'name', 'id');
+                }
+
+                $games = array_merge($contents['data'], $games);
+
+                if ($contents['pagination']['cursor'] === null) {
+                    break;
+                }
+
+                $after = $contents['pagination']['cursor'];
             }
-
-            $games = array_merge($contents['data'], $games);
-
-            if ($contents['pagination']['cursor'] === null) {
-                break;
-            }
-
-            $after = $contents['pagination']['cursor'];
+        } catch (\Throwable $th) {
+            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            throw $th;
         }
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
@@ -168,28 +202,37 @@ class TwitchWrapper
     {
         Benchmarker::getInstance()->start(__CLASS__ . '::' . __FUNCTION__);
 
-        $this->authorizeTwitchApi();
-
         $first = 100;
         $after = null;
         $games = [];
 
-        for ($i = 0; $i < $count / $first; $i++) {
-            $response = $this->twitchApi->getGamesApi()->getTopGames($this->bearerToken, $first, null, $after);
-            $contents = json_decode($response->getBody()->getContents(), true);
+        try {
+            for ($i = 0; $i < $count / $first; $i++) {
+                $response = $this->twitchApi->getGamesApi()->getTopGames($this->getBearerToken(), $first, null, $after);
+                $statusCode = $response->getStatusCode();
 
-            if (empty($contents['data'])) {
-                Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
-                return $games;
+                if ($statusCode !== 200) {
+                    throw new \Exception("Twitch API returned status code {$statusCode}");
+                }
+
+                $contents = json_decode($response->getBody()->getContents(), true);
+
+                if (empty($contents['data'])) {
+                    Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+                    return $games;
+                }
+
+                $games = array_merge($contents['data'], $games);
+
+                if ($contents['pagination']['cursor'] === null) {
+                    break;
+                }
+
+                $after = $contents['pagination']['cursor'];
             }
-
-            $games = array_merge($contents['data'], $games);
-
-            if ($contents['pagination']['cursor'] === null) {
-                break;
-            }
-
-            $after = $contents['pagination']['cursor'];
+        } catch (\Throwable $th) {
+            Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+            throw $th;
         }
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
@@ -208,11 +251,34 @@ class TwitchWrapper
         $oauth = $this->twitchApi->getOauthApi();
 
         $token = $oauth->getAppAccessToken(); // lasts for 60 days
+        $statusCode = $token->getStatusCode();
+
+        if ($statusCode !== 200) {
+            throw new \Exception("Twitch API returned status code {$statusCode}");
+        }
+
         $data = json_decode($token->getBody()->getContents());
 
+        if (!isset($data->access_token) || empty($data->access_token)) {
+            throw new \Exception("Failed to authorize Twitch API");
+        }
+
         // Your bearer token
-        $this->bearerToken = $data->access_token ?? null;
+        $this->bearerToken = $data->access_token;
 
         Benchmarker::getInstance()->stop(__CLASS__ . '::' . __FUNCTION__);
+    }
+
+    private function getBearerToken(): string
+    {
+        if ($this->bearerToken === null) {
+            $this->authorizeTwitchApi();
+        }
+
+        if ($this->bearerToken === null) {
+            throw new \Exception("Failed to authorize Twitch API");
+        }
+
+        return $this->bearerToken;
     }
 }
