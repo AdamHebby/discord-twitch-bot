@@ -88,6 +88,11 @@ class Bot
         });
 
         $this->discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction) {
+            if ($interaction->data?->name === null) {
+                $this->logger->error('Received interaction without a name');
+                return;
+            }
+
             try {
                 Benchmarker::getInstance()->start('Interaction: ' . $interaction->data->name);
                 $interaction->acknowledge()->then(function () use ($interaction) {
@@ -113,7 +118,7 @@ class Bot
         });
 
         $this->discord->on(Event::MESSAGE_CREATE, function (Message $message) {
-            if ($message->content === '!sb restart' && $message->author->id === $_ENV['DISCORD_OWNER_ID']) {
+            if ($message->content === '!sb restart' && $message->author?->id === $_ENV['DISCORD_OWNER_ID']) {
                 $message->react('👍')->then(function () {
                     sleep(1);
                     $this->logger->info('Restarting bot...');

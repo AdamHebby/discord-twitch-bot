@@ -28,14 +28,12 @@ class DiscordClipEmbedQuery
         $gameField = $gameName ? ['name' => 'Game', 'value' => $gameName, 'inline' => true] : null;
         $streamer  = $this->streamerRepository->getStreamerById($clip->broadcasterId);
 
-        $embed = new Embed($this->discord, [
+        $data = [
             'title'  => $clip->title . ' - Click to Watch on Twitch',
             'url'    => $clip->getUrl(),
             'image'  => ['url' => $clip->thumbnailUrl],
             'author' => [
                 'name'     => $clip->broadcasterName,
-                'url'      => $streamer->getUrl(),
-                'icon_url' => $streamer->profileImageUrl . '?rand=' . time(),
             ],
             'color'  => hexdec('6a44bc'),
             'timestamp' => $clip->createdAt->format('c'),
@@ -50,7 +48,14 @@ class DiscordClipEmbedQuery
             'footer' => [
                 'text' => 'Made by .justabignerd',
             ]
-        ]);
+        ];
+
+        if ($streamer !== null) {
+            $data['author']['url'] = $streamer->getUrl();
+            $data['author']['icon_url'] = $streamer->profileImageUrl . '?rand=' . time();
+        }
+
+        $embed = new Embed($this->discord, $data);
 
         Benchmarker::getInstance()->stop(__CLASS__);
 

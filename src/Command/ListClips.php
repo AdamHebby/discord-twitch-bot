@@ -48,6 +48,12 @@ class ListClips extends Command
         return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
             Benchmarker::getInstance()->start(__CLASS__);
 
+            if ($interaction->guild_id === null || $interaction->guild === null) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                $this->interactionReply($interaction, "This command can only be used in a server.")->then($resolve, $reject);
+                return;
+            }
+
             $settings = $this->guildSettingsRepository->load($interaction->guild_id);
             $channels = $settings->getClipChannels();
 
@@ -84,8 +90,8 @@ class ListClips extends Command
 
             $this->logger->info(sprintf(
                 'Clips List shown to user %s (%s) in guild "%s" (%s)',
-                $interaction->member->username,
-                $interaction->member->id,
+                $interaction->member?->username,
+                $interaction->member?->id,
                 $interaction->guild->name,
                 $interaction->guild_id
             ));

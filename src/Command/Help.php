@@ -5,6 +5,7 @@ namespace DiscordTwitchBot\Command;
 use Discord\Parts\Interactions\Interaction;
 use DiscordTwitchBot\Application\Benchmarker;
 use Psr\Log\LoggerInterface;
+use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 
 class Help extends Command
@@ -32,37 +33,45 @@ class Help extends Command
 
     public function execute(Interaction $interaction): PromiseInterface
     {
-        Benchmarker::getInstance()->start(__CLASS__);
+        return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            Benchmarker::getInstance()->start(__CLASS__);
 
-        $commands = $this->commandHandler->getCommands();
-        $msg = "**Commands:**\n";
-
-        foreach ($commands as $command) {
-            $args = '';
-
-            foreach ($command->getOptions() as $argument) {
-                $name = str_replace('_', ' ', $argument->getName());
-
-                if ($argument->isRequired()) {
-                    $args .= " <{$name}>";
-                } else {
-                    $args .= " [{$name}]";
-                }
+            if ($interaction->guild_id === null || $interaction->guild === null) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                $this->interactionReply($interaction, "This command can only be used in a server.")->then($resolve, $reject);
+                return;
             }
 
-            $msg .= "- `{$command->getName()}{$args}` - {$command->getDescription()}\n";
-        }
+            $commands = $this->commandHandler->getCommands();
+            $msg = "**Commands:**\n";
 
-        return $this->interactionReply($interaction, $msg)->then(function() use ($interaction) {
-            $this->logger->info(sprintf(
-                'Help message shown to user %s (%s) in guild "%s" (%s)',
-                $interaction->member->username,
-                $interaction->member->id,
-                $interaction->guild->name,
-                $interaction->guild_id
-            ));
+            foreach ($commands as $command) {
+                $args = '';
 
-            Benchmarker::getInstance()->stop(__CLASS__);
+                foreach ($command->getOptions() as $argument) {
+                    $name = str_replace('_', ' ', $argument->getName());
+
+                    if ($argument->isRequired()) {
+                        $args .= " <{$name}>";
+                    } else {
+                        $args .= " [{$name}]";
+                    }
+                }
+
+                $msg .= "- `{$command->getName()}{$args}` - {$command->getDescription()}\n";
+            }
+
+            $this->interactionReply($interaction, $msg)->then(function() use ($interaction) {
+                $this->logger->info(sprintf(
+                    'Help message shown to user %s (%s) in guild "%s" (%s)',
+                    $interaction->member?->username,
+                    $interaction->member?->id,
+                    $interaction->guild->name,
+                    $interaction->guild_id
+                ));
+
+                Benchmarker::getInstance()->stop(__CLASS__);
+            })->then($resolve, $reject);
         });
     }
 }

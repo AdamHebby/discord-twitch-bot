@@ -48,6 +48,7 @@ class CommandHandler
     public function handle(Interaction $interaction): PromiseInterface
     {
         return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
+            // @phpstan-ignore-next-line - name is guaranteed to be present due to command definition
             $name = $interaction->data->name;
             $command = $this->getCommand($name);
 

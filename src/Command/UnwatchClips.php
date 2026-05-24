@@ -48,6 +48,13 @@ class UnwatchClips extends Command
         return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
             Benchmarker::getInstance()->start(__CLASS__);
 
+            if ($interaction->guild_id === null || $interaction->guild === null) {
+                Benchmarker::getInstance()->killActive(__CLASS__);
+                $this->interactionReply($interaction, "This command can only be used in a server.")->then($resolve, $reject);
+                return;
+            }
+
+            // @phpstan-ignore-next-line - Options are guaranteed to be present due to command definition
             $options       = $interaction->data->options;
             $streamer      = strtolower($options['streamer']->value);
             $guildId       = $interaction->guild_id;
@@ -68,8 +75,8 @@ class UnwatchClips extends Command
                 $streamer,
                 $interaction->guild->name,
                 $interaction->guild_id,
-                $interaction->member->username,
-                $interaction->member->id,
+                $interaction->member?->username,
+                $interaction->member?->id,
             ));
 
             Benchmarker::getInstance()->stop(__CLASS__);

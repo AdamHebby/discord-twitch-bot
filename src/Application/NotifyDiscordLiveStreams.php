@@ -16,7 +16,7 @@ use Psr\Log\LoggerInterface;
 
 class NotifyDiscordLiveStreams
 {
-    /** @var array<string,Stream> $streamCache */
+    /** @var array<string,Stream|null> $streamCache */
     private array $streamCache = [];
 
     /** @var array<string,bool> $offlineCache */
@@ -84,6 +84,11 @@ class NotifyDiscordLiveStreams
         $streamer = $this->streamerRepository->getStreamerByLogin($stream->userLogin);
         $guildSettings = $this->guildSettingsRepository->load($guild->id);
 
+        if ($streamer === null) {
+            $this->logger->error("Notify: Streamer {$stream->userLogin} not found in database. Skipping.");
+            return;
+        }
+
         if ($this->notifiedStreamsRepository->isNotified($stream->id, $guild->id)) {
             $this->logger->debug(
                 "Notify: Stream {$stream->id} already notified in guild {$guild->name}. Skipping."
@@ -100,6 +105,11 @@ class NotifyDiscordLiveStreams
 
         $message = $this->discordLiveEmbedQuery->generate($guildSettings, $streamer, $stream);
         $channel = $guildSettings->getStreamerChannel($stream->userLogin);
+
+        if ($channel === null) {
+            $this->logger->error("Notify: No channel configured for streamer {$stream->userLogin} in guild {$guild->name}");
+            return;
+        }
 
         $discordChannel = $this->discord->getChannel($channel);
 
