@@ -16,6 +16,9 @@ abstract class Command
 
     abstract public function getDescription(): string;
 
+    /**
+     * @return PromiseInterface<void>
+     */
     abstract public function execute(Interaction $message): PromiseInterface;
 
     /**
@@ -36,19 +39,28 @@ abstract class Command
         return $command;
     }
 
+    /**
+     * @return PromiseInterface<void>
+     */
     public function interactionReply(Interaction $interaction, string $message): PromiseInterface
     {
         return new Promise(function (callable $resolve, callable $reject) use ($interaction, $message) {
             Benchmarker::getInstance()->start('interactionReply');
             if ($interaction->isResponded()) {
-                return $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($message))->finally(function() {
-                    Benchmarker::getInstance()->stop('interactionReply');
-                });
+                $interaction->updateOriginalResponse(MessageBuilder::new()->setContent($message))
+                    ->then($resolve, $reject)
+                    ->finally(function() {
+                        Benchmarker::getInstance()->stop('interactionReply');
+                    });
+
+                return;
             }
 
-            return $interaction->respondWithMessage(MessageBuilder::new()->setContent($message))->finally(function() {
-                Benchmarker::getInstance()->stop('interactionReply');
-            });
+            $interaction->respondWithMessage(MessageBuilder::new()->setContent($message))
+                ->then($resolve, $reject)
+                ->finally(function() {
+                    Benchmarker::getInstance()->stop('interactionReply');
+                });
         });
     }
 }

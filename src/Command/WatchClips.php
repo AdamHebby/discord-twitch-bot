@@ -70,7 +70,8 @@ class WatchClips extends Command
 
             if ($streamerObj === null) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, "Streamer `$streamer` does not exist.");
+                $this->interactionReply($interaction, "Streamer `$streamer` does not exist.")->then($resolve, $reject);
+                return;
             }
 
             $this->streamerRepository->add($streamerObj);
@@ -81,12 +82,14 @@ class WatchClips extends Command
 
             if ($existingClipChannel && $existingClipChannel === $channelId) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, "Clips for streamer `$streamer` are already being posted in <#$existingClipChannel>.");
+                $this->interactionReply($interaction, "Clips for streamer `$streamer` are already being posted in <#$existingClipChannel>.")->then($resolve, $reject);
+                return;
             }
 
             if ($interaction->guild->channels->get('id', $channelId) === null) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, "Channel <#$channelId> not found.");
+                $this->interactionReply($interaction, "Channel <#$channelId> not found.")->then($resolve, $reject);
+                return;
             }
 
             $guildSettings->addClipChannel($streamer, $channelId);
@@ -104,7 +107,8 @@ class WatchClips extends Command
 
             Benchmarker::getInstance()->stop(__CLASS__);
 
-            return $this->interactionReply($interaction, "Clips for streamer `$streamer` will now be posted in <#$channelId>.");
+            $this->interactionReply($interaction, "Clips for streamer `$streamer` will now be posted in <#$channelId>.")->then($resolve, $reject);
+            return;
         });
     }
 }

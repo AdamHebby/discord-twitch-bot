@@ -55,7 +55,8 @@ class UnwatchClips extends Command
 
             if ($guildSettings->getClipChannel($streamer) === null) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, "Clips for streamer $streamer are not being posted.");
+                $this->interactionReply($interaction, "Clips for streamer $streamer are not being posted.")->then($resolve, $reject);
+                return;
             }
 
             $guildSettings->removeClipChannel($streamer);
@@ -72,7 +73,8 @@ class UnwatchClips extends Command
             ));
 
             Benchmarker::getInstance()->stop(__CLASS__);
-            return $this->interactionReply($interaction, "Clips for streamer $streamer will no longer be posted.");
+            $this->interactionReply($interaction, "Clips for streamer $streamer will no longer be posted.")->then($resolve, $reject);
+            return;
         });
     }
 }

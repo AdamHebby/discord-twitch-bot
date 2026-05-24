@@ -50,7 +50,8 @@ class RemoveStreamer extends Command
 
             if ($guildSettings->hasStreamer($streamer) === false) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, "{$streamer} is not being watched!");
+                $this->interactionReply($interaction, "{$streamer} is not being watched!")->then($resolve, $reject);
+                return;
             }
 
             $guildSettings->removeStreamer($streamer);
@@ -67,7 +68,8 @@ class RemoveStreamer extends Command
 
             Benchmarker::getInstance()->stop(__CLASS__);
 
-            return $this->interactionReply($interaction, "{$streamer} is no longer being watched!");
+            $this->interactionReply($interaction, "{$streamer} is no longer being watched!")->then($resolve, $reject);
+            return;
         });
     }
 }

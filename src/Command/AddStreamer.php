@@ -78,7 +78,7 @@ class AddStreamer extends Command
 
             $channel = $interaction->guild->channels->get('id', $channelId);
             if ($channel === null) {
-                $this->interactionReply($interaction, "I can't see the channel <#{$channelId}>.");
+                $this->interactionReply($interaction, "I can't see the channel <#{$channelId}>.")->then($resolve, $reject);
                 return;
             }
 
@@ -92,7 +92,7 @@ class AddStreamer extends Command
                     $this->interactionReply(
                         $interaction,
                         "{$streamer} is already being watched in that channel with that message!"
-                    );
+                    )->then($resolve, $reject);
                     return;
                 }
             }
@@ -100,16 +100,15 @@ class AddStreamer extends Command
             $streamerObject = $this->twitchApi->getStreamer($streamer);
 
             if ($streamerObject === null) {
-                return $this->interactionReply($interaction, "{$streamer} is not a valid Twitch streamer!");
+                $this->interactionReply($interaction, "{$streamer} is not a valid Twitch streamer!")->then($resolve, $reject);
+                return;
             }
 
             try {
                 $this->streamerRepository->add($streamerObject);
             } catch (\Throwable $th) {
                 $this->logger->error("Failed to add streamer {$streamer}: " . $th->getMessage());
-                // $this->interactionReply($interaction, "Failed to add streamer {$streamer}. Please try again later.");
-
-                $reject(new \Exception("Failed to add streamer {$streamer}. Please try again later."));
+                $this->interactionReply($interaction, "Failed to add streamer {$streamer}. Please try again later.")->then($resolve, $reject);
                 return;
             }
 
@@ -138,9 +137,7 @@ class AddStreamer extends Command
                 ));
 
                 Benchmarker::getInstance()->stop(__CLASS__);
-            });
-
-            return $replyPromise;
+            })->then($resolve, $reject);
         });
     }
 }

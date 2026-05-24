@@ -54,7 +54,8 @@ class ListStreamers extends Command
 
             if (empty($streamers)) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, 'No streamers are being watched!');
+                $this->interactionReply($interaction, 'No streamers are being watched!')->then($resolve, $reject);
+                return;
             }
 
             $pageNumber = ($interaction->data->options['page']->value ?? 1) - 1;
@@ -95,7 +96,7 @@ class ListStreamers extends Command
             ));
 
             Benchmarker::getInstance()->stop(__CLASS__);
-            return $this->interactionReply($interaction, $messages[$pageNumber] ?? $messages[count($messages) - 1]);
+            $this->interactionReply($interaction, $messages[$pageNumber] ?? $messages[count($messages) - 1])->then($resolve, $reject);
         });
     }
 }

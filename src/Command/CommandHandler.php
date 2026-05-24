@@ -42,6 +42,9 @@ class CommandHandler
         return $this->commands[$commandName] ?? null;
     }
 
+    /**
+     * @return PromiseInterface<void>
+     */
     public function handle(Interaction $interaction): PromiseInterface
     {
         return new Promise(function (callable $resolve, callable $reject) use ($interaction) {
@@ -49,7 +52,8 @@ class CommandHandler
             $command = $this->getCommand($name);
 
             if ($command === null) {
-                return $reject(new \Exception("Command not found: $name"));
+                $reject(new \Exception("Command not found: $name"));
+                return;
             }
 
             $command->execute($interaction)->then(function() use ($resolve) {

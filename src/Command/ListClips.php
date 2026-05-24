@@ -53,7 +53,8 @@ class ListClips extends Command
 
             if (empty($channels)) {
                 Benchmarker::getInstance()->killActive(__CLASS__);
-                return $this->interactionReply($interaction, 'No channels are being watched!');
+                $this->interactionReply($interaction, 'No channels are being watched!')->then($resolve, $reject);
+                return;
             }
 
             $pageNumber = ($interaction->data->options['page']->value ?? 1) - 1;
@@ -91,7 +92,8 @@ class ListClips extends Command
 
             Benchmarker::getInstance()->stop(__CLASS__);
 
-            return $this->interactionReply($interaction, $messages[$pageNumber]);
+            $this->interactionReply($interaction, $messages[$pageNumber])->then($resolve, $reject);
+            return;
         });
     }
 }
