@@ -1,2 +1,0 @@
-#!/bin/sh
-rsync --exclude-from 'rsync-ignore.txt' -rv --checksum adam@blackwall:/home/adam/twitch-bot/ .
